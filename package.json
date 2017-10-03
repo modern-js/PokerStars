@@ -9,6 +9,7 @@
   "author": "Hristo Stoychev",
   "license": "MIT",
   "devDependencies": {
+    "babel-preset-es2015": "^6.24.1",
     "eslint": "^4.8.0",
     "eslint-config-airbnb": "^15.1.0",
     "eslint-plugin-import": "^2.7.0",
