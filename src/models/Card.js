@@ -1,4 +1,4 @@
-export class Card {
+class Card {
     constructor(number, suit) {
         this.number = number;
         this.suit = suit;
@@ -8,3 +8,5 @@ export class Card {
         return `${this.number}-${this.suit}`;
     }
 }
+
+module.exports = { Card };

@@ -1,4 +1,4 @@
-import { Card } from './models/Card';
+const Card = require('./models/Card').Card;
 
 function createDeck() {
     const deck = [];
@@ -59,4 +59,4 @@ function generateCards(numberOfCardsToGenerate, alreadyGeneratedCards) {
     return generatedCards;
 }
 
-export { determineWinner, generateCards };
+module.exports = { determineWinner, generateCards };
