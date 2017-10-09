@@ -1,6 +1,6 @@
 const Card = require('./models/Card').Card;
 
-function setupHandChecker(river) {
+function setupHandRanker(river) {
     const numbersCards = new Array(15).fill(0).map(() => []);
     const suitsCards = new Array(5).fill(0).map(() => []);
     const cardsSet = new Set();
@@ -114,32 +114,44 @@ function setupHandChecker(river) {
     };
 }
 
-function determineWinner(river, hands) {
-    const bestHands = [];
-    let bestRank = 0;
+function rankHands(river, hands) {
+    const rankHand = setupHandRanker(river);
+    return new Map(hands.map(hand => [hand, rankHand(hand)]));
+}
 
-    hands.forEach((hand) => {
-        const handRank = setupHandChecker(river, hand);
-
-        if (handRank > bestRank) {
-            bestRank = handRank;
-            bestHands.splice(0, bestHands.length, hand);
-        } else if (handRank === bestRank) {
-            bestHands.push(hand);
-        }
-    });
-
-    if (bestHands.length === 1) {
-        return bestHands[0];
+function resolveWinner(firstCombination, secondCombination) {
+    for (let i = 0; i < 5; i += 1) {
+        if (firstCombination[i].number > secondCombination[i].number) return 1;
+        else if (firstCombination[i].number < secondCombination[i].number) return 2;
     }
 
-    return 0;
+    return 3;
+}
+
+function determineWinners(rankedHands) {
+    const maxRank = Math.max(...[...rankedHands.values()].map(value => value.rank));
+    const maxRankedHands = [...rankedHands.entries()].filter(entry => entry[1].rank === maxRank);
+
+    const winners = [maxRankedHands[0]];
+    for (let i = 1; i < maxRankedHands.length; i += 1) {
+        const currentWinnerCombination = winners[0][1].bestCombination;
+        const candidateWinnerCombination = maxRankedHands[i][1].bestCombination;
+
+        const verdict = resolveWinner(currentWinnerCombination, candidateWinnerCombination);
+        if (verdict === 2) {
+            winners.splice(0, winners.length, maxRankedHands[i]);
+        } else if (verdict === 3) {
+            winners.push(maxRankedHands[i]);
+        }
+    }
+
+    return new Map(winners);
 }
 
 function createDeck() {
     const deck = [];
     for (let i = 2; i < 15; i += 1) {
-        for (let j = 0; j < 4; j += 1) {
+        for (let j = 1; j < 5; j += 1) {
             deck.push(new Card(i, j));
         }
     }
@@ -169,4 +181,4 @@ function generateCards(numberOfCardsToGenerate, alreadyGeneratedCards) {
     return generatedCards;
 }
 
-module.exports = { determineWinner, generateCards };
+module.exports = { rankHands, determineWinner: determineWinners, generateCards };
