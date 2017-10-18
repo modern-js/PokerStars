@@ -2,6 +2,10 @@
     "extends": "airbnb",
     "rules": {
         "indent": ["error", 4],
-        "no-trailing-spaces": ["error", { "skipBlankLines": true }]
+        "no-trailing-spaces": ["error", { "skipBlankLines": true }],
+        "react/jsx-indent": ["error", 4]
+    },
+    "globals": {
+        "document": true
     }
 }
