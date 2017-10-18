@@ -1,5 +1,5 @@
 const path = require('path');
-const webpack = require('webpack');
+// const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const htmlWebpackPluginConfig = new HtmlWebpackPlugin({
@@ -10,18 +10,21 @@ const htmlWebpackPluginConfig = new HtmlWebpackPlugin({
 
 
 module.exports = {
-    entry: './src/client/index.js',
+    entry: './src/client/index.jsx',
     output: {
         path: path.resolve('dist'),
         filename: 'index_bundle.js',
     },
     module: {
         loaders: [
-            { test: /\.js$/, loader: 'babel-loader', exclude: /node_modules/ },
+            { test: /\.jsx?$/, loaders: ['babel-loader', 'eslint-loader'], exclude: /node_modules/ },
         ],
     },
     plugins: [
-        new webpack.optimize.UglifyJsPlugin(),
+        // new webpack.optimize.UglifyJsPlugin(),
         htmlWebpackPluginConfig,
     ],
+    resolve: {
+        extensions: ['.js', '.jsx'],
+    },
 };
