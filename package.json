@@ -5,7 +5,8 @@
   "main": "index.js",
   "scripts": {
     "build": "webpack",
-    "lint": "eslint --ext .js --ext .jsx src"
+    "lint": "eslint --ext .js --ext .jsx src",
+    "dev": "webpack-dev-server --inline --hot"
   },
   "author": "Hristo Stoychev",
   "license": "MIT",
