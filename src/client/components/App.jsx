@@ -1,8 +1,9 @@
 import React from 'react';
+import CreateTable from './CreateTable';
 
 export default function App() {
     return (
         <div>
-            <h1>Hello World</h1>
+            <CreateTable createTable={(name, password) => console.log(name, password)} />
         </div>);
 }
