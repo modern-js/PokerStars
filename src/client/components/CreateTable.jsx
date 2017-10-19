@@ -1,11 +1,10 @@
 import React from 'react';
+import PropTypes from 'prop-types';
 
 export default class CreateTable extends React.Component {
-    static get propTypes() {
-        return {
-            createTable: React.PropTypes.func.isRequired,
-        };
-    }
+    static propTypes = {
+        createTable: PropTypes.func.isRequired,
+    };
 
     constructor(props) {
         super(props);
