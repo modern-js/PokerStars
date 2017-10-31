@@ -15,6 +15,11 @@ export default class CreateTable extends React.Component {
         };
     }
 
+    handleCreate = () => {
+        this.props.createTable(this.state.name, this.state.password);
+        this.setState({ name: '', password: '' });
+    };
+
     render() {
         return (
             <div>
@@ -26,7 +31,7 @@ export default class CreateTable extends React.Component {
                     <label htmlFor="password"> Password </label>
                     <input type="password" id="password" name="password" value={this.state.password} onChange={(e) => { this.setState({ password: e.target.value }); }} />
                     <br />
-                    <input type="button" value="Create" onClick={() => { this.props.createTable(this.state.name, this.state.password); }} />
+                    <input type="button" value="Create" onClick={this.handleCreate} />
                 </form>
             </div>);
     }
