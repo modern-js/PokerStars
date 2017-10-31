@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import axios from 'axios';
 import CreateTable from './CreateTable';
 
 export default class Tables extends Component {
@@ -11,21 +12,24 @@ export default class Tables extends Component {
     }
 
     componentDidMount() {
-        this.setState({ tables: [
-            { id: 1, players: ['Hristo', 'Niki', 'Gosho', 'Ivan'], name: 'first', isLocked: true },
-            { id: 2, players: ['Hristo', 'Niki', 'Gosho', 'Ivan', 'Pesho'], name: 'second', isLocked: false },
-            { id: 3, players: ['Hristo', 'Niki', 'Gosho'], name: 'third', isLocked: true },
-            { id: 4, players: ['Hristo', 'Niki', 'Gosho', 'Ivan', 'Plamen'], name: 'fourth', isLocked: false },
-            { id: 5, players: ['Hristo', 'Niki', 'Dobri'], name: 'fifth', isLocked: false }] });
+        axios.get('http://localhost:6701/api/tables')
+            .then(res => res.data)
+            .then(data => this.setState({ tables: data }));
     }
 
     handleJoin(tableId) {
         console.log(tableId);
     }
 
-    createTable(username, password) {
-        console.log(username, password);
-    }
+    createTable = (name, password) => {
+        axios.post('http://localhost:6701/api/tables', { name, password })
+            .then(res => res.data)
+            .then(data => this.setState(data));
+
+        setTimeout(() => {
+            this.setState({ message: '' });
+        }, 2000);
+    };
 
     render() {
         const tables = this.state.tables.map(t => (
@@ -46,6 +50,7 @@ export default class Tables extends Component {
                 <div>
                     {tables}
                 </div>
+                {this.state.message && <span>{this.state.message}</span>}
                 <CreateTable createTable={this.createTable} />
             </div>
         );
