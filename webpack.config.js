@@ -1,5 +1,5 @@
 const path = require('path');
-// const webpack = require('webpack');
+const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
 
 const htmlWebpackPluginConfig = new HtmlWebpackPlugin({
@@ -21,7 +21,7 @@ module.exports = {
         ],
     },
     plugins: [
-        // new webpack.optimize.UglifyJsPlugin(),
+        new webpack.optimize.UglifyJsPlugin(),
         htmlWebpackPluginConfig,
     ],
     resolve: {

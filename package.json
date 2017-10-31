@@ -6,8 +6,11 @@
   "scripts": {
     "build": "webpack",
     "lint": "eslint --ext .js --ext .jsx src",
-    "dev": "webpack-dev-server --inline --hot --historyApiFallback",
-    "server": "node src/server/server.js"
+    "clientServer": "webpack-dev-server --inline --hot --historyApiFallback",
+    "start": "node src/server/server.js",
+    "dev": "npm-run-all --parallel watch:client watch:server",
+    "watch:client": "webpack --watch",
+    "watch:server": "nodemon -e js --watch src/server/ src/server/server.js"
   },
   "author": "Hristo Stoychev",
   "license": "MIT",
@@ -24,6 +27,8 @@
     "eslint-plugin-import": "^2.7.0",
     "eslint-plugin-jsx-a11y": "^5.1.1",
     "eslint-plugin-react": "^7.4.0",
+    "nodemon": "^1.12.1",
+    "npm-run-all": "^4.1.1",
     "webpack-dev-server": "^2.9.2"
   },
   "dependencies": {
