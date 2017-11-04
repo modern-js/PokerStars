@@ -6,6 +6,7 @@ module.exports = {
     add(table) {
         table.id = uuid.v4();
         tables.set(table.id, table);
+        return table;
     },
     remove(id) {
         tables.delete(id);
