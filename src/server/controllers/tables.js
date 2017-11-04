@@ -25,9 +25,11 @@ router.post('/', (req, res) => {
         players: [],
     };
 
-    tables.add(table);
+    const newTable = tables.add(table);
     const message = { message: 'added successfully' };
+
     res.json(message);
+    req.app.get('io').emit('newTable', newTable);
 });
 
 module.exports = router;

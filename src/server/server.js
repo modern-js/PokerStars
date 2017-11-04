@@ -1,8 +1,10 @@
 const express = require('express');
+const socketIo = require('socket.io');
 const controllers = require('./controllers');
 
 const app = express();
-// const io = require('socket.io')(app);
+const server = app.listen(6701);
+const io = socketIo(server);
 
 app.use((req, res, next) => {
     res.header('Access-Control-Allow-Origin', '*');
@@ -13,16 +15,4 @@ app.use((req, res, next) => {
 app.use(express.json());
 app.use(express.static('dist'));
 app.use('/api', controllers);
-
-// io.on('connection', (client) => {
-//     client.emit('news', { hello: 'world' });
-//
-//     client.on('subscribeToTimer', (interval) => {
-//         console.log('client is subscribing to timer with interval ', interval);
-//         setInterval(() => {
-//             client.emit('timer', new Date());
-//         }, interval);
-//     });
-// });
-
-app.listen(6701);
+app.set('io', io);
