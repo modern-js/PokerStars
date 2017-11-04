@@ -1,8 +1,15 @@
 import React, { Component } from 'react';
 import axios from 'axios';
+import PropTypes from 'prop-types';
 import CreateTable from './CreateTable';
 
 export default class Tables extends Component {
+    static propTypes = {
+        history: PropTypes.shape({
+            push: PropTypes.func.isRequired,
+        }).isRequired,
+    };
+
     constructor(props) {
         super(props);
 
@@ -18,7 +25,7 @@ export default class Tables extends Component {
     }
 
     handleJoin(tableId) {
-        console.log(tableId);
+        this.props.history.push(`/${tableId}`);
     }
 
     createTable = (name, password) => {

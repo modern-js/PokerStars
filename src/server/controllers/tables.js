@@ -7,6 +7,10 @@ router.get('/', (req, res) => {
     res.json(tables.list());
 });
 
+router.get('/:id', (req, res) => {
+    res.send(tables.getById(req.params.id));
+});
+
 router.post('/', (req, res) => {
     const table = {
         name: req.body.name,
