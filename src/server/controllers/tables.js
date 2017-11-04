@@ -8,7 +8,13 @@ router.get('/', (req, res) => {
 });
 
 router.get('/:id', (req, res) => {
-    res.send(tables.getById(req.params.id));
+    const table = tables.getById(req.params.id);
+
+    if (!table) {
+        res.status(404);
+    }
+
+    res.send(table);
 });
 
 router.post('/', (req, res) => {

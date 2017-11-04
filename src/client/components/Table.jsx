@@ -9,6 +9,9 @@ export default class Table extends Component {
                 id: PropTypes.string.isRequired,
             }).isRequired,
         }).isRequired,
+        history: PropTypes.shape({
+            push: PropTypes.func.isRequired,
+        }).isRequired,
     };
 
     constructor(props) {
@@ -22,7 +25,8 @@ export default class Table extends Component {
     componentDidMount() {
         axios.get(`http://localhost:6701/api/tables/${this.props.match.params.id}`)
             .then(res => res.data)
-            .then(table => this.setState({ table }));
+            .then(table => this.setState({ table }))
+            .catch(() => this.props.history.push('/404'));
     }
 
     render() {
