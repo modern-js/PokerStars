@@ -8,7 +8,7 @@ export default function App() {
         <BrowserRouter>
             <Switch>
                 <Route exact path="/" component={Tables} />
-                <Route exact path="/:id" component={Table} />
+                <Route exact path="/table/:id" component={Table} />
                 <Route render={() => <div>Page not found</div>} />
             </Switch>
         </BrowserRouter>

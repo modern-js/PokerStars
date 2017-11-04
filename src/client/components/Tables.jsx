@@ -25,7 +25,7 @@ export default class Tables extends Component {
     }
 
     handleJoin(tableId) {
-        this.props.history.push(`/${tableId}`);
+        this.props.history.push(`table/${tableId}`);
     }
 
     createTable = (name, password) => {
