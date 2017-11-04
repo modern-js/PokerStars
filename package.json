@@ -4,10 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "build": "webpack",
+    "client:build": "webpack",
     "lint": "eslint --ext .js --ext .jsx src",
-    "clientServer": "webpack-dev-server --inline --hot --historyApiFallback",
-    "start": "node src/server/server.js",
+    "client:server": "webpack-dev-server --inline --hot --historyApiFallback",
+    "start": "webpack && node src/server/server.js",
     "dev": "npm-run-all --parallel watch:client watch:server",
     "watch:client": "webpack --watch",
     "watch:server": "nodemon -e js --watch src/server/ src/server/server.js"
