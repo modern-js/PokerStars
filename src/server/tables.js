@@ -13,4 +13,7 @@ module.exports = {
     list() {
         return Array.from(tables.values());
     },
+    getById(id) {
+        return tables.get(id);
+    },
 };
