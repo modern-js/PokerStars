@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import axios from 'axios';
 import PropTypes from 'prop-types';
+import Controllers from './Controllers';
 
 export default class Table extends Component {
     static propTypes = {
@@ -55,6 +56,10 @@ export default class Table extends Component {
             .catch(() => this.props.history.push('/404'));
     }
 
+    handleControllerPressed(action, betAmount) {
+
+    };
+
     render() {
         const { table } = this.state;
 
@@ -74,6 +79,7 @@ export default class Table extends Component {
                     <div style={{ ...Table.playerStyles, right: '5%', bottom: '-5%' }}>asd<br />chips</div>
                     <div style={{ ...Table.playerStyles, left: '-12%', top: '50%', transform: 'translate(0, -50%)' }}>asd<br />chips</div>
                 </div>
+                <Controllers maxBet={400} amountToCall={100} handleAction={this.handleControllerPressed} />
             </div>
         );
     }
