@@ -17,4 +17,15 @@ module.exports = {
     getById(id) {
         return tables.get(id);
     },
+    addPlayer(id, seatNumber, player) {
+        tables.get(id).currentDraw.seats[seatNumber] = player;
+    },
+    toSimpleViewModel(table) {
+        return {
+            id: table.id,
+            name: table.name,
+            isLocked: table.password !== '',
+            players: table.currentDraw.seats.filter(seat => seat).map(seat => seat.playerName),
+        };
+    },
 };

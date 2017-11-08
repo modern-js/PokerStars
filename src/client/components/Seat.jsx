@@ -1,19 +1,23 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
 
-export default class Spot extends Component {
+export default class Seat extends Component {
     static propTypes = {
         left: PropTypes.string.isRequired,
         right: PropTypes.string.isRequired,
         top: PropTypes.string.isRequired,
         bottom: PropTypes.string.isRequired,
         player: PropTypes.shape({
-            name: PropTypes.string.isRequired,
-            chipsCount: PropTypes.number.isRequired,
-            cards: PropTypes.array.isRequired,
-        }).isRequired,
+            playerName: PropTypes.string,
+            chips: PropTypes.number,
+            cards: PropTypes.array,
+        }),
         joinPlayer: PropTypes.func.isRequired,
-        spotNumber: PropTypes.number.isRequired,
+        seatNumber: PropTypes.number.isRequired,
+    };
+
+    static defaultProps = {
+        player: null,
     };
 
     static playerStyles = {
@@ -24,7 +28,7 @@ export default class Spot extends Component {
         position: 'absolute',
         padding: '1%',
         borderRadius: '50%',
-        lineHeight: '5vh',
+        lineHeight: '8vh',
     };
 
     static cardStyles = {
@@ -44,18 +48,18 @@ export default class Spot extends Component {
         };
     }
 
-    getSpotProperties = () => ({
+    getSeatProperties = () => ({
         style: {
-            ...Spot.playerStyles,
-            ...this.positionSpotStyles,
+            ...Seat.playerStyles,
+            ...this.positionSeatStyles,
             backgroundColor: this.determineBackgroundColor(),
         },
         onClick: this.handleJoinClick,
-        onMouseEnter: this.hoverOnSpot,
-        onMouseLeave: this.hoverOnSpot,
+        onMouseEnter: this.hoverOnSeat,
+        onMouseLeave: this.hoverOnSeat,
     });
 
-    positionSpotStyles = {
+    positionSeatStyles = {
         left: this.props.left,
         right: this.props.right,
         top: this.props.top,
@@ -72,7 +76,7 @@ export default class Spot extends Component {
         return 'lightgray';
     };
 
-    hoverOnSpot = () => {
+    hoverOnSeat = () => {
         if (!this.props.player) {
             this.setState({ hovered: !this.state.hovered });
         }
@@ -80,7 +84,7 @@ export default class Spot extends Component {
 
     handleJoinClick = () => {
         if (!this.props.player) {
-            this.props.joinPlayer(this.props.spotNumber);
+            this.props.joinPlayer(this.props.seatNumber);
         }
     };
 
@@ -88,16 +92,13 @@ export default class Spot extends Component {
         const { player } = this.props;
 
         return (
-            <div {...this.getSpotProperties()}>
+            <div {...this.getSeatProperties()}>
+                { player && player.cards && <div>
+                    <img src={`../img/cards/${player.cards[0]}.svg`} style={{ ...Seat.cardStyles, left: '10%' }} alt={`../img/cards/${player.cards[0]}.svg`} />
+                    <img src={`../img/cards/${player.cards[1]}.svg`} style={{ ...Seat.cardStyles, right: '10%' }} alt={`../img/cards/${player.cards[1]}.svg`} />
+                </div>}
                 <div>
-                    <img src="../img/cards/2-1.svg" style={{ ...Spot.cardStyles, left: '10%' }} alt="card" />
-                    <img src="../img/cards/2-2.svg" style={{ ...Spot.cardStyles, right: '10%' }} alt="card" />
-                </div>
-                <div>
-                    {player ? `${player.name}\n${player.chipsCount}` : 'Click to sit!'}
-                </div>
-                <div>
-                    
+                    {player ? `${player.playerName} - ${player.chips}` : 'Click to sit!'}
                 </div>
             </div>
         );

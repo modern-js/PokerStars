@@ -2,7 +2,7 @@ import React, { Component } from 'react';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import Controllers from './Controllers';
-import Spot from './Spot';
+import Seat from './Seat';
 
 export default class Table extends Component {
     static propTypes = {
@@ -31,7 +31,7 @@ export default class Table extends Component {
         zIndex: '-2',
     };
 
-    static spotsPositions = [
+    static seatsPositions = [
         ['5', '', '-5', ''],
         ['41', '', '-12', ''],
         ['', '5', '-5', ''],
@@ -61,39 +61,45 @@ export default class Table extends Component {
 
     };
 
-    joinPlayer(spotNumber) {
+    joinPlayer = (seatNumber) => {
+        // TODO: set the state if needed
+        const playerName = 'hasan';
 
-    }
+        axios.put(`http://localhost:6701/api/tables/${this.props.match.params.id}/addPlayer`, {
+            playerName,
+            seatNumber,
+        });
+    };
 
     render() {
         const { table } = this.state;
 
         if (!table) {
-            return <div>Loading...</div>;
+            return null;
         }
 
-        const spots = [];
+        const seats = [];
 
         for (let i = 0; i < 8; i += 1) {
-            const spotProps = {
-                left: `${Table.spotsPositions[i][0]}%`,
-                right: `${Table.spotsPositions[i][1]}%`,
-                top: `${Table.spotsPositions[i][2]}%`,
-                bottom: `${Table.spotsPositions[i][3]}%`,
-                player: table.players[i],
+            const seatProps = {
+                left: `${Table.seatsPositions[i][0]}%`,
+                right: `${Table.seatsPositions[i][1]}%`,
+                top: `${Table.seatsPositions[i][2]}%`,
+                bottom: `${Table.seatsPositions[i][3]}%`,
+                player: table.seats[i],
                 joinPlayer: this.joinPlayer,
-                spotNumber: i,
+                seatNumber: i,
                 key: i,
             };
 
-            spots.push(<Spot {...spotProps} />);
+            seats.push(<Seat {...seatProps} />);
         }
 
-
+        // TODO: show controllers only when player isInTurn
         return (
             <div>
                 <div style={Table.tableStyles}>
-                    {spots}
+                    {seats}
                 </div>
                 <Controllers maxBet={400} amountToCall={100} canCall={true} canRaise={true} handleAction={this.handleControllerPressed} />
             </div>
