@@ -24,20 +24,22 @@ export default class Table extends Component {
         backgroundColor: 'red',
         position: 'absolute',
         left: '15%',
-        top: '8%',
+        top: '12%',
         borderRadius: '30%/50%',
-        border: '15px double black',
+        border: '20px double black',
+        boxShadow: 'inset 0 0 35px 6px rgba(0,0,0,0,0.75)',
+        zIndex: '-2',
     };
 
     static spotsPositions = [
-        ['5', '', '-5', '', '0', '0'],
-        ['50', '', '-12', '', '-50', '0'],
-        ['', '5', '-5', '', '0', '0'],
-        ['', '-12', '50', '', '0', '-50'],
-        ['5', '', '', '-5', '0', '0'],
-        ['50', '', '', '-12', '-50', '0'],
-        ['', '5', '', '-5', '0', '0'],
-        ['-12', '', '50', '', '0', '-50'],
+        ['5', '', '-5', ''],
+        ['41', '', '-12', ''],
+        ['', '5', '-5', ''],
+        ['', '-12', '41', ''],
+        ['5', '', '', '-5'],
+        ['41', '', '', '-12'],
+        ['', '5', '', '-5'],
+        ['-12', '', '41', ''],
     ];
 
     constructor(props) {
@@ -78,7 +80,6 @@ export default class Table extends Component {
                 right: `${Table.spotsPositions[i][1]}%`,
                 top: `${Table.spotsPositions[i][2]}%`,
                 bottom: `${Table.spotsPositions[i][3]}%`,
-                transform: `translate(${Table.spotsPositions[i][4]}%,${Table.spotsPositions[i][5]}%)`,
                 player: table.players[i],
                 joinPlayer: this.joinPlayer,
                 spotNumber: i,

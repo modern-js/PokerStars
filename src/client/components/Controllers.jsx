@@ -36,8 +36,8 @@ export default class Controllers extends Component {
                 </div>
                 <div>
                     <button onClick={this.props.handleAction(0)}>Fold</button>
-                    <button disabled={this.props.canCall} onClick={this.props.handleAction(1)}>Call{this.props.canCall ? ` ${this.props.amountToCall}` : ''}</button>
-                    <button disabled={this.props.canRaise} onClick={this.props.handleAction(2, this.state.betValue)}>Raise To {this.props.canRaise ? ` ${this.state.betValue}` : ''}</button>
+                    <button disabled={!this.props.canCall} onClick={this.props.handleAction(1)}>Call{this.props.canCall ? ` ${this.props.amountToCall}` : ''}</button>
+                    <button disabled={!this.props.canRaise} onClick={this.props.handleAction(2, this.state.betValue)}>Raise To {this.props.canRaise ? ` ${this.state.betValue}` : ''}</button>
                 </div>
             </div>
         );
