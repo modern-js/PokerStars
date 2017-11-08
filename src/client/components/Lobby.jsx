@@ -29,6 +29,7 @@ export default class Lobby extends Component {
 
     componentWillUnmount() {
         unsubscribeForEvent('newTable', this.pushTableToState);
+        clearTimeout(this.state.messageTimeoutId);
     }
 
     pushTableToState = (table) => {
@@ -39,7 +40,6 @@ export default class Lobby extends Component {
 
     handleJoin = (tableId) => {
         this.props.history.push(`table/${tableId}`);
-        clearTimeout(this.state.messageTimeoutId);
     };
 
     createTable = (name, password) => {
@@ -61,7 +61,7 @@ export default class Lobby extends Component {
                 <div>{table.name}</div>
                 <ul>
                     {table.players.map(player => (
-                        <li>{player}</li>
+                        <li key={player}>{player}</li>
                     ))}
                 </ul>
                 <button onClick={() => { this.handleJoin(table.id); }}>Join</button>
