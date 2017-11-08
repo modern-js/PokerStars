@@ -4,7 +4,7 @@ import PropTypes from 'prop-types';
 import CreateTable from './CreateTable';
 import { subscribeForEvent, unsubscribeForEvent } from '../services/tablesServices';
 
-export default class Tables extends Component {
+export default class Lobby extends Component {
     static propTypes = {
         history: PropTypes.shape({
             push: PropTypes.func.isRequired,
@@ -37,10 +37,10 @@ export default class Tables extends Component {
         }));
     };
 
-    handleJoin(tableId) {
+    handleJoin = (tableId) => {
         this.props.history.push(`table/${tableId}`);
         clearTimeout(this.state.messageTimeoutId);
-    }
+    };
 
     createTable = (name, password) => {
         axios.post('http://localhost:6701/api/tables', { name, password })

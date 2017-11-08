@@ -2,6 +2,7 @@ import React, { Component } from 'react';
 import axios from 'axios';
 import PropTypes from 'prop-types';
 import Controllers from './Controllers';
+import Spot from './Spot';
 
 export default class Table extends Component {
     static propTypes = {
@@ -28,18 +29,16 @@ export default class Table extends Component {
         border: '15px double black',
     };
 
-    static playerStyles = {
-        width: '16%',
-        height: '12%',
-        backgroundColor: 'green',
-        border: '2px solid black',
-        textAlign: 'center',
-        position: 'absolute',
-        overflow: 'hidden',
-        padding: '1%',
-        borderRadius: '50%',
-        lineHeight: '5vh',
-    };
+    static spotsPositions = [
+        ['5', '', '-5', '', '0', '0'],
+        ['50', '', '-12', '', '-50', '0'],
+        ['', '5', '-5', '', '0', '0'],
+        ['', '-12', '50', '', '0', '-50'],
+        ['5', '', '', '-5', '0', '0'],
+        ['50', '', '', '-12', '-50', '0'],
+        ['', '5', '', '-5', '0', '0'],
+        ['-12', '', '50', '', '0', '-50'],
+    ];
 
     constructor(props) {
         super(props);
@@ -60,6 +59,10 @@ export default class Table extends Component {
 
     };
 
+    joinPlayer(spotNumber) {
+
+    }
+
     render() {
         const { table } = this.state;
 
@@ -67,19 +70,31 @@ export default class Table extends Component {
             return <div>Loading...</div>;
         }
 
+        const spots = [];
+
+        for (let i = 0; i < 8; i += 1) {
+            const spotProps = {
+                left: `${Table.spotsPositions[i][0]}%`,
+                right: `${Table.spotsPositions[i][1]}%`,
+                top: `${Table.spotsPositions[i][2]}%`,
+                bottom: `${Table.spotsPositions[i][3]}%`,
+                transform: `translate(${Table.spotsPositions[i][4]}%,${Table.spotsPositions[i][5]}%)`,
+                player: table.players[i],
+                joinPlayer: this.joinPlayer,
+                spotNumber: i,
+                key: i,
+            };
+
+            spots.push(<Spot {...spotProps} />);
+        }
+
+
         return (
             <div>
                 <div style={Table.tableStyles}>
-                    <div style={{ ...Table.playerStyles, left: '5%', top: '-5%' }}>asd<br />chips</div>
-                    <div style={{ ...Table.playerStyles, left: '50%', top: '-12%', transform: 'translate(-50%, 0)' }}>asd<br />chips</div>
-                    <div style={{ ...Table.playerStyles, right: '5%', top: '-5%' }}>asd<br />chips</div>
-                    <div style={{ ...Table.playerStyles, right: '-12%', top: '50%', transform: 'translate(0, -50%)' }}>asd<br />chips</div>
-                    <div style={{ ...Table.playerStyles, left: '5%', bottom: '-5%' }}>asd<br />chips</div>
-                    <div style={{ ...Table.playerStyles, left: '50%', bottom: '-12%', transform: 'translate(-50%, 0)' }}>asd<br />chips</div>
-                    <div style={{ ...Table.playerStyles, right: '5%', bottom: '-5%' }}>asd<br />chips</div>
-                    <div style={{ ...Table.playerStyles, left: '-12%', top: '50%', transform: 'translate(0, -50%)' }}>asd<br />chips</div>
+                    {spots}
                 </div>
-                <Controllers maxBet={400} amountToCall={100} handleAction={this.handleControllerPressed} />
+                <Controllers maxBet={400} amountToCall={100} canCall={true} canRaise={true} handleAction={this.handleControllerPressed} />
             </div>
         );
     }
