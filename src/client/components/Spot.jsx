@@ -7,7 +7,6 @@ export default class Spot extends Component {
         right: PropTypes.string.isRequired,
         top: PropTypes.string.isRequired,
         bottom: PropTypes.string.isRequired,
-        transform: PropTypes.string.isRequired,
         player: PropTypes.shape({
             name: PropTypes.string.isRequired,
             chipsCount: PropTypes.number.isRequired,
@@ -23,10 +22,18 @@ export default class Spot extends Component {
         border: '2px solid black',
         textAlign: 'center',
         position: 'absolute',
-        overflow: 'hidden',
         padding: '1%',
         borderRadius: '50%',
         lineHeight: '5vh',
+    };
+
+    static cardStyles = {
+        width: '35%',
+        height: '150%',
+        borderRadius: '5px',
+        position: 'absolute',
+        zIndex: '-1',
+        top: '-60%',
     };
 
     constructor(props) {
@@ -36,6 +43,34 @@ export default class Spot extends Component {
             hovered: false,
         };
     }
+
+    getSpotProperties = () => ({
+        style: {
+            ...Spot.playerStyles,
+            ...this.positionSpotStyles,
+            backgroundColor: this.determineBackgroundColor(),
+        },
+        onClick: this.handleJoinClick,
+        onMouseEnter: this.hoverOnSpot,
+        onMouseLeave: this.hoverOnSpot,
+    });
+
+    positionSpotStyles = {
+        left: this.props.left,
+        right: this.props.right,
+        top: this.props.top,
+        bottom: this.props.bottom,
+    };
+
+    determineBackgroundColor = () => {
+        if (this.props.player) {
+            return 'green';
+        } else if (this.state.hovered) {
+            return 'gray';
+        }
+
+        return 'lightgray';
+    };
 
     hoverOnSpot = () => {
         if (!this.props.player) {
@@ -49,44 +84,20 @@ export default class Spot extends Component {
         }
     };
 
-    determineBackgroundColor = () => {
-        if (this.props.player) {
-            return 'green';
-        } else if (this.state.hovered) {
-            return 'gray';
-        }
-
-        return 'lightgray';
-    };
-
-    getSpotProperties = () => {
-        return {
-            style: {
-                ...Spot.playerStyles,
-                ...this.positionPlayerStyles,
-                backgroundColor: this.determineBackgroundColor(),
-            },
-            onClick: this.handleJoinClick,
-            onMouseEnter: this.hoverOnSpot,
-            onMouseLeave: this.hoverOnSpot,
-        };
-    };
-
-    positionPlayerStyles = {
-        left: this.props.left,
-        right: this.props.right,
-        top: this.props.top,
-        bottom: this.props.bottom,
-        transform: this.props.transform,
-    };
-
     render() {
         const { player } = this.props;
 
         return (
-            <div>
-                <div {...this.getSpotProperties()}>
+            <div {...this.getSpotProperties()}>
+                <div>
+                    <img src="../img/cards/2-1.svg" style={{ ...Spot.cardStyles, left: '10%' }} alt="card" />
+                    <img src="../img/cards/2-2.svg" style={{ ...Spot.cardStyles, right: '10%' }} alt="card" />
+                </div>
+                <div>
                     {player ? `${player.name}\n${player.chipsCount}` : 'Click to sit!'}
+                </div>
+                <div>
+                    
                 </div>
             </div>
         );
