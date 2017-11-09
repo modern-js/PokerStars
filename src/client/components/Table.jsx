@@ -3,6 +3,7 @@ import axios from 'axios';
 import PropTypes from 'prop-types';
 import Controllers from './Controllers';
 import Seat from './Seat';
+import { subscribeForEvent, unsubscribeForEvent } from "../services/tablesServices";
 
 export default class Table extends Component {
     static propTypes = {
@@ -55,17 +56,30 @@ export default class Table extends Component {
             .then(res => res.data)
             .then(table => this.setState({ table }))
             .catch(() => this.props.history.push('/404'));
+
+        subscribeForEvent(this.props.match.params.id, this.addPlayerToState);
+    }
+
+    componentWillUnmount() {
+        unsubscribeForEvent(this.state.table.id, this.addPlayerToState);
     }
 
     handleControllerPressed(action, betAmount) {
 
     };
 
+    addPlayerToState = (player) => {
+        const table = this.state.table;
+        table.currentDraw.seats[player.seatNumber] = player;
+
+        this.setState({ table });
+    };
+
     joinPlayer = (seatNumber) => {
         // TODO: set the state if needed
         const playerName = 'hasan';
 
-        axios.put(`http://localhost:6701/api/tables/${this.props.match.params.id}/addPlayer`, {
+        axios.put(`http://localhost:6701/api/tables/${this.state.table.id}/addPlayer`, {
             playerName,
             seatNumber,
         });
@@ -86,7 +100,7 @@ export default class Table extends Component {
                 right: `${Table.seatsPositions[i][1]}%`,
                 top: `${Table.seatsPositions[i][2]}%`,
                 bottom: `${Table.seatsPositions[i][3]}%`,
-                player: table.seats[i],
+                player: table.currentDraw.seats[i],
                 joinPlayer: this.joinPlayer,
                 seatNumber: i,
                 key: i,
