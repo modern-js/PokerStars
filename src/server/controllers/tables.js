@@ -61,7 +61,27 @@ router.put('/:id/addPlayer', (req, res) => {
 
     tables.addPlayer(table.id, req.body.seatNumber, newPlayer);
 
-    req.app.get('io').emit(table.id, newPlayer);
+    req.app.get('io').emit(table.id, {
+        seatNumber: req.body.seatNumber,
+        player: newPlayer,
+    });
+    return res.status(200).send();
+});
+
+router.put('/:id/removePlayer', (req, res) => {
+    const table = tables.getById(req.params.id);
+
+    if (!table) {
+        return res.status(404).send();
+    }
+
+    tables.addPlayer(table.id, req.body.seatNumber, null);
+
+    req.app.get('io').emit(table.id, {
+        seatNumber: req.body.seatNumber,
+        player: null,
+    });
+
     return res.status(200).send();
 });
 
