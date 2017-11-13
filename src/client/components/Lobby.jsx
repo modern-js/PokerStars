@@ -61,7 +61,7 @@ export default class Lobby extends Component {
                 <div>{table.name}</div>
                 <ul>
                     {table.players.map(player => (
-                        <li key={player}>{player}</li>
+                        <li key={player.playerId}>{player.playerName}</li>
                     ))}
                 </ul>
                 <button onClick={() => { this.handleJoin(table.id); }}>Join</button>

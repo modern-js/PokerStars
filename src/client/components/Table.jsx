@@ -3,7 +3,7 @@ import axios from 'axios';
 import PropTypes from 'prop-types';
 import Controllers from './Controllers';
 import Seat from './Seat';
-import { subscribeForEvent, unsubscribeForEvent } from "../services/tablesServices";
+import { subscribeForEvent, unsubscribeForEvent } from '../services/tablesServices';
 
 export default class Table extends Component {
     static propTypes = {
@@ -48,6 +48,7 @@ export default class Table extends Component {
 
         this.state = {
             table: null,
+            player: null,
         };
     }
 
@@ -61,28 +62,47 @@ export default class Table extends Component {
     }
 
     componentWillUnmount() {
+        this.leaveTable();
         unsubscribeForEvent(this.state.table.id, this.addPlayerToState);
+        window.removeEventListener('beforeunload', this.leaveTable);
     }
 
-    handleControllerPressed(action, betAmount) {
+    handleControllerPressed = (action, betAmount) => {
 
     };
 
-    addPlayerToState = (player) => {
+    addPlayerToState = (data) => {
         const table = this.state.table;
-        table.currentDraw.seats[player.seatNumber] = player;
+        table.currentDraw.seats[data.seatNumber] = data.player;
 
         this.setState({ table });
     };
 
     joinPlayer = (seatNumber) => {
-        // TODO: set the state if needed
-        const playerName = 'hasan';
+        const playerName = window.prompt('Enter your nickname!');
 
-        axios.put(`http://localhost:6701/api/tables/${this.state.table.id}/addPlayer`, {
+        const player = {
             playerName,
             seatNumber,
-        });
+        };
+
+        if (playerName) {
+            axios.put(`http://localhost:6701/api/tables/${this.state.table.id}/addPlayer`, {
+                playerName,
+                seatNumber,
+            });
+
+            this.setState({ player });
+            window.addEventListener('beforeunload', this.leaveTable);
+        }
+    };
+
+    leaveTable = () => {
+        if (this.state.player) {
+            axios.put(`http://localhost:6701/api/tables/${this.state.table.id}/removePlayer`, {
+                seatNumber: this.state.player.seatNumber,
+            });
+        }
     };
 
     render() {
@@ -106,7 +126,9 @@ export default class Table extends Component {
                 key: i,
             };
 
-            seats.push(<Seat {...seatProps} />);
+            if (seatProps.player || !this.state.player) {
+                seats.push(<Seat {...seatProps} />);
+            }
         }
 
         // TODO: show controllers only when player isInTurn
