@@ -14,7 +14,7 @@ export default class Lobby extends Component {
         super(props);
 
         this.state = {
-            tables: [],
+            tables: new Map(),
         };
     }
 
@@ -31,13 +31,17 @@ export default class Lobby extends Component {
     }
 
     getAllTables = (tables) => {
-        this.setState({ tables });
+        const tablesMap = new Map();
+        tables.forEach(table => tablesMap.set(table.id, table));
+
+        this.setState({ tables: tablesMap });
     };
 
     addNewTableToState = (table) => {
-        this.setState(prevState => ({
-            tables: [...prevState.tables, table],
-        }));
+        const tables = this.state.tables;
+        tables.set(table.id, table);
+
+        this.setState({ tables });
     };
 
     createNewTable = (name, password) => {
@@ -49,8 +53,8 @@ export default class Lobby extends Component {
     };
 
     render() {
-        const tables = this.state.tables.map(table => (
-            <div key={table.id} style={{ border: '1px solid black', width: '20%', margin: '2% 1%', padding: '1%', display: 'inline-block', position: 'relative' }}>
+        const tables = Array.from(this.state.tables).map(([id, table]) => (
+            <div key={id} style={{ border: '1px solid black', width: '20%', margin: '2% 1%', padding: '1%', display: 'inline-block', position: 'relative' }}>
                 {table.isLocked && <span style={{ position: 'absolute', top: '5%', right: '5%' }}>Locked</span>}
                 <div>{table.name}</div>
                 <ul>

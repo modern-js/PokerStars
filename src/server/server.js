@@ -25,30 +25,6 @@ app.use('/api', controllers);
 app.set('io', io);
 
 io.on('connection', (socket) => {
-    const removePlayerFromRoom = () => {
-        const tableId = Object.keys(socket.rooms).filter(room => room !== socket.id)[0];
-        const table = tables.getById(tableId);
-
-        if (!table) {
-            socket.emit('error', { message: 'There is no such table!' });
-            return;
-        }
-
-        const seatNumber = tables.getPlayerSeatIndex(tableId, socket.id);
-
-        if (seatNumber === -1) {
-            socket.emit('error', { message: 'You are not playing on this table!' });
-            return;
-        }
-
-        tables.addPlayer(tableId, seatNumber, null);
-        socket.leave(tableId);
-        io.to(tableId).emit('newPlayer', {
-            seatNumber,
-            player: null,
-        });
-    };
-
     socket.on('getTables', () => {
         socket.emit('getTables', tables.list().map(table => tables.toSimpleViewModel(table)));
     });
@@ -90,13 +66,38 @@ io.on('connection', (socket) => {
         }
 
         const newPlayer = tables.addPlayer(tableId, player.seatNumber, player, socket.id);
+
         io.to(tableId).emit('newPlayer', {
             seatNumber: newPlayer.seatNumber,
             player: newPlayer,
         });
+
+        io.emit('newTable', tables.toSimpleViewModel(table));
     });
 
     socket.on('leaveRoom', () => {
-        removePlayerFromRoom();
+        const tableId = Object.keys(socket.rooms).filter(room => room !== socket.id)[0];
+        const table = tables.getById(tableId);
+
+        if (!table) {
+            socket.emit('error', { message: 'There is no such table!' });
+            return;
+        }
+
+        const seatNumber = tables.getPlayerSeatIndex(tableId, socket.id);
+
+        if (seatNumber === -1) {
+            socket.emit('error', { message: 'You are not playing on this table!' });
+            return;
+        }
+
+        tables.addPlayer(tableId, seatNumber, null);
+        socket.leave(tableId);
+        io.to(tableId).emit('newPlayer', {
+            seatNumber,
+            player: null,
+        });
+
+        io.emit('newTable', tables.toSimpleViewModel(table));
     });
 });
