@@ -4,10 +4,12 @@ const tables = new Map();
 
 module.exports = {
     add(table) {
-        if (table) {
-            table.id = uuid.v4();
-            tables.set(table.id, table);
-        }
+        table.id = uuid.v4();
+        table.currentDraw = {
+            seats: new Array(8).fill(null),
+        };
+
+        tables.set(table.id, table);
 
         return table;
     },
@@ -20,12 +22,20 @@ module.exports = {
     getById(id) {
         return tables.get(id);
     },
-    addPlayer(id, seatNumber, player) {
+    addPlayer(id, seatNumber, player, playerId) {
         if (player) {
-            player.playerId = uuid.v4();
+            player.playerId = playerId;
+            player.cards = [null, null];
+            player.chips = 1000;
         }
 
         tables.get(id).currentDraw.seats[seatNumber] = player;
+        return player;
+    },
+    getPlayerSeatIndex(tableId, playerId) {
+        const tableSeats = tables.get(tableId).currentDraw.seats;
+        const seatIndex = tableSeats.findIndex(seat => seat && seat.playerId === playerId);
+        return seatIndex;
     },
     toSimpleViewModel(table) {
         return {

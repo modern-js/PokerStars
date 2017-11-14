@@ -1,9 +1,9 @@
 import React, { Component } from 'react';
-import axios from 'axios';
+import { Prompt } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import Controllers from './Controllers';
 import Seat from './Seat';
-import { subscribeForEvent, unsubscribeForEvent } from '../services/tablesServices';
+import * as socket from '../services/socket';
 
 export default class Table extends Component {
     static propTypes = {
@@ -14,6 +14,7 @@ export default class Table extends Component {
         }).isRequired,
         history: PropTypes.shape({
             push: PropTypes.func.isRequired,
+            replace: PropTypes.func.isRequired,
         }).isRequired,
     };
 
@@ -32,6 +33,8 @@ export default class Table extends Component {
         zIndex: '-2',
     };
 
+    static exitMessage = 'Are you sure you want to leave?';
+
     static seatsPositions = [
         ['5', '', '-5', ''],
         ['41', '', '-12', ''],
@@ -48,61 +51,71 @@ export default class Table extends Component {
 
         this.state = {
             table: null,
-            player: null,
+            isPlaying: false,
         };
     }
 
     componentDidMount() {
-        axios.get(`http://localhost:6701/api/tables/${this.props.match.params.id}`)
-            .then(res => res.data)
-            .then(table => this.setState({ table }))
-            .catch(() => this.props.history.push('/404'));
+        socket.subscribeForEvent('getRoom', this.getTable);
+        socket.subscribeForEvent('newPlayer', this.addNewPlayerToState);
 
-        subscribeForEvent(this.props.match.params.id, this.addPlayerToState);
+        socket.emitEvent('getRoom', this.props.match.params.id);
     }
 
     componentWillUnmount() {
-        this.leaveTable();
-        unsubscribeForEvent(this.state.table.id, this.addPlayerToState);
-        window.removeEventListener('beforeunload', this.leaveTable);
+        socket.unsubscribeForEvent('getRoom', this.getTable);
+        socket.unsubscribeForEvent('newPlayer', this.addNewPlayerToState);
+
+        if (this.state.isPlaying) {
+            window.removeEventListener('beforeunload', this.warnOnExit);
+            window.removeEventListener('unload', this.leaveRoom);
+            this.leaveRoom();
+        }
     }
 
-    handleControllerPressed = (action, betAmount) => {
-
+    getTable = (table) => {
+        if (table) {
+            this.setState({ table });
+        } else {
+            this.props.history.replace('/404');
+        }
     };
 
-    addPlayerToState = (data) => {
+    addNewPlayerToState = (response) => {
         const table = this.state.table;
-        table.currentDraw.seats[data.seatNumber] = data.player;
+        table.currentDraw.seats[response.seatNumber] = response.player;
 
         this.setState({ table });
     };
 
-    joinPlayer = (seatNumber) => {
+    joinNewPlayer = (seatNumber) => {
         const playerName = window.prompt('Enter your nickname!');
 
-        const player = {
-            playerName,
-            seatNumber,
-        };
-
         if (playerName) {
-            axios.put(`http://localhost:6701/api/tables/${this.state.table.id}/addPlayer`, {
+            const player = {
                 playerName,
                 seatNumber,
-            });
+            };
 
-            this.setState({ player });
-            window.addEventListener('beforeunload', this.leaveTable);
+            socket.emitEvent('newPlayer', player);
+            this.setState({ isPlaying: true });
+            window.addEventListener('beforeunload', this.warnOnExit);
+            window.addEventListener('unload', this.leaveRoom);
         }
     };
 
-    leaveTable = () => {
-        if (this.state.player) {
-            axios.put(`http://localhost:6701/api/tables/${this.state.table.id}/removePlayer`, {
-                seatNumber: this.state.player.seatNumber,
-            });
-        }
+    warnOnExit = (ev) => {
+        ev.returnValue = Table.exitMessage;
+        return Table.exitMessage;
+    };
+
+    leaveRoom = () => {
+        socket.emitEvent('leaveRoom');
+    };
+
+
+    handleControllerPressed = (action, betAmount) => {
+
     };
 
     render() {
@@ -121,12 +134,12 @@ export default class Table extends Component {
                 top: `${Table.seatsPositions[i][2]}%`,
                 bottom: `${Table.seatsPositions[i][3]}%`,
                 player: table.currentDraw.seats[i],
-                joinPlayer: this.joinPlayer,
+                joinPlayer: this.joinNewPlayer,
                 seatNumber: i,
                 key: i,
             };
 
-            if (seatProps.player || !this.state.player) {
+            if (seatProps.player || !this.state.isPlaying) {
                 seats.push(<Seat {...seatProps} />);
             }
         }
@@ -134,6 +147,7 @@ export default class Table extends Component {
         // TODO: show controllers only when player isInTurn
         return (
             <div>
+                <Prompt message={Table.exitMessage} when={this.state.isPlaying} />
                 <div style={Table.tableStyles}>
                     {seats}
                 </div>

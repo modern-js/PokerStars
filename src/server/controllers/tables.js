@@ -41,7 +41,7 @@ router.post('/', (req, res) => {
     req.app.get('io').emit('newTable', tables.toSimpleViewModel(newTable));
 });
 
-router.put('/:id/addPlayer', (req, res) => {
+router.put('/:id/addNewPlayerToState', (req, res) => {
     const table = tables.getById(req.params.id);
 
     if (!table) {
