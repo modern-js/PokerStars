@@ -9,3 +9,7 @@ export function subscribeForEvent(name, callback) {
 export function unsubscribeForEvent(name, callback) {
     socket.removeListener(name, callback);
 }
+
+export function emitEvent(name, data) {
+    socket.emit(name, data);
+}

@@ -1,8 +1,7 @@
 import React, { Component } from 'react';
-import axios from 'axios';
 import PropTypes from 'prop-types';
 import CreateTable from './CreateTable';
-import { subscribeForEvent, unsubscribeForEvent } from '../services/tablesServices';
+import * as socket from '../services/socket';
 
 export default class Lobby extends Component {
     static propTypes = {
@@ -20,38 +19,33 @@ export default class Lobby extends Component {
     }
 
     componentDidMount() {
-        axios.get('http://localhost:6701/api/tables')
-            .then(res => res.data)
-            .then(tables => this.setState({ tables }));
+        socket.subscribeForEvent('getTables', this.getAllTables);
+        socket.subscribeForEvent('newTable', this.addNewTableToState);
 
-        subscribeForEvent('newTable', this.pushTableToState);
+        socket.emitEvent('getTables');
     }
 
     componentWillUnmount() {
-        unsubscribeForEvent('newTable', this.pushTableToState);
-        clearTimeout(this.state.messageTimeoutId);
+        socket.unsubscribeForEvent('getTables', this.getAllTables);
+        socket.unsubscribeForEvent('newTable', this.addNewTableToState);
     }
 
-    pushTableToState = (table) => {
+    getAllTables = (tables) => {
+        this.setState({ tables });
+    };
+
+    addNewTableToState = (table) => {
         this.setState(prevState => ({
             tables: [...prevState.tables, table],
         }));
     };
 
-    handleJoin = (tableId) => {
-        this.props.history.push(`table/${tableId}`);
+    createNewTable = (name, password) => {
+        socket.emitEvent('newTable', { name, password });
     };
 
-    createTable = (name, password) => {
-        axios.post('http://localhost:6701/api/tables', { name, password })
-            .then(res => res.data)
-            .then(data => this.setState({ message: data.message }));
-
-        const messageTimeoutId = setTimeout(() => {
-            this.setState({ message: '' });
-        }, 2000);
-
-        this.setState({ messageTimeoutId });
+    joinTable = (tableId) => {
+        this.props.history.push(`table/${tableId}`);
     };
 
     render() {
@@ -64,17 +58,14 @@ export default class Lobby extends Component {
                         <li key={player.playerId}>{player.playerName}</li>
                     ))}
                 </ul>
-                <button onClick={() => { this.handleJoin(table.id); }}>Join</button>
+                <button onClick={() => { this.joinTable(table.id); }}>Join</button>
             </div>
         ));
 
         return (
             <div>
-                <div>
-                    {tables}
-                </div>
-                {this.state.message && <span>{this.state.message}</span>}
-                <CreateTable createTable={this.createTable} />
+                <div>{tables}</div>
+                <CreateTable createTable={this.createNewTable} />
             </div>
         );
     }
