@@ -4,6 +4,7 @@ const controllers = require('./controllers');
 const logger = require('morgan');
 
 const tables = require('./tables');
+const pokerEngine = require('../engine');
 
 const app = express();
 const server = app.listen(6701, () => {
@@ -25,6 +26,30 @@ app.use('/api', controllers);
 app.set('io', io);
 
 io.on('connection', (socket) => {
+    const getTableId = () => Object.keys(socket.rooms).filter(room => room !== socket.id)[0];
+
+    const startNewDeal = () => {
+        const tableId = getTableId();
+        const table = tables.getById(tableId);
+        const { currentDraw } = table;
+        const seats = currentDraw.seats.filter(seat => seat);
+
+        if (seats.length > 1 && !currentDraw.hasStarted) {
+            currentDraw.hasStarted = true;
+            const alreadyGeneratedCards = new Set();
+            
+            seats.forEach((seat) => {
+                seat.cards = pokerEngine.generateCards(2, alreadyGeneratedCards)
+                    .map(card => card.signature);
+
+                io.to(seat.playerId).emit('updatePlayer', {
+                    seatNumber: seat.seatNumber,
+                    player: seat,
+                });
+            });
+        }
+    };
+
     socket.on('getTables', () => {
         socket.emit('getTables', tables.list().map(table => tables.toSimpleViewModel(table)));
     });
@@ -54,7 +79,7 @@ io.on('connection', (socket) => {
     });
 
     socket.on('newPlayer', (player) => {
-        const tableId = Object.keys(socket.rooms).filter(room => room !== socket.id)[0];
+        const tableId = getTableId();
         const table = tables.getById(tableId);
 
         // If there is no such table or the seat is taken or the user is already playing on this table
@@ -67,16 +92,18 @@ io.on('connection', (socket) => {
 
         const newPlayer = tables.addPlayer(tableId, player.seatNumber, player, socket.id);
 
-        io.to(tableId).emit('newPlayer', {
+        io.to(tableId).emit('updatePlayer', {
             seatNumber: newPlayer.seatNumber,
             player: newPlayer,
         });
 
         io.emit('newTable', tables.toSimpleViewModel(table));
+
+        startNewDeal();
     });
 
     socket.on('leaveRoom', () => {
-        const tableId = Object.keys(socket.rooms).filter(room => room !== socket.id)[0];
+        const tableId = getTableId();
         const table = tables.getById(tableId);
 
         if (!table) {
@@ -93,7 +120,7 @@ io.on('connection', (socket) => {
 
         tables.addPlayer(tableId, seatNumber, null);
         socket.leave(tableId);
-        io.to(tableId).emit('newPlayer', {
+        io.to(tableId).emit('updatePlayer', {
             seatNumber,
             player: null,
         });

@@ -51,22 +51,22 @@ export default class Table extends Component {
 
         this.state = {
             table: null,
-            isPlaying: false,
+            hasJoined: false,
         };
     }
 
     componentDidMount() {
         socket.subscribeForEvent('getRoom', this.getTable);
-        socket.subscribeForEvent('newPlayer', this.addNewPlayerToState);
+        socket.subscribeForEvent('updatePlayer', this.updatePlayer);
 
         socket.emitEvent('getRoom', this.props.match.params.id);
     }
 
     componentWillUnmount() {
         socket.unsubscribeForEvent('getRoom', this.getTable);
-        socket.unsubscribeForEvent('newPlayer', this.addNewPlayerToState);
+        socket.unsubscribeForEvent('updatePlayer', this.updatePlayer);
 
-        if (this.state.isPlaying) {
+        if (this.state.hasJoined) {
             window.removeEventListener('beforeunload', this.warnOnExit);
             window.removeEventListener('unload', this.leaveRoom);
             this.leaveRoom();
@@ -81,7 +81,7 @@ export default class Table extends Component {
         }
     };
 
-    addNewPlayerToState = (response) => {
+    updatePlayer = (response) => {
         const table = this.state.table;
         table.currentDraw.seats[response.seatNumber] = response.player;
 
@@ -97,8 +97,9 @@ export default class Table extends Component {
                 seatNumber,
             };
 
+            this.setState({ hasJoined: true });
+
             socket.emitEvent('newPlayer', player);
-            this.setState({ isPlaying: true });
             window.addEventListener('beforeunload', this.warnOnExit);
             window.addEventListener('unload', this.leaveRoom);
         }
@@ -139,7 +140,7 @@ export default class Table extends Component {
                 key: i,
             };
 
-            if (seatProps.player || !this.state.isPlaying) {
+            if (seatProps.player || !this.state.hasJoined) {
                 seats.push(<Seat {...seatProps} />);
             }
         }
@@ -147,7 +148,7 @@ export default class Table extends Component {
         // TODO: show controllers only when player isInTurn
         return (
             <div>
-                <Prompt message={Table.exitMessage} when={this.state.isPlaying} />
+                <Prompt message={Table.exitMessage} when={this.state.hasJoined} />
                 <div style={Table.tableStyles}>
                     {seats}
                 </div>
