@@ -7,6 +7,8 @@ module.exports = {
         table.id = uuid.v4();
         table.currentDraw = {
             seats: new Array(8).fill(null),
+            hasStarted: false,
+            playerInTurn: -1,
         };
 
         tables.set(table.id, table);
@@ -27,6 +29,7 @@ module.exports = {
             player.playerId = playerId;
             player.cards = [null, null];
             player.chips = 1000;
+            player.bet = 0;
         }
 
         tables.get(id).currentDraw.seats[seatNumber] = player;
