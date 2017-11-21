@@ -52,8 +52,10 @@ io.on('connection', (socket) => {
             seats[smallBlindIndex].bet = 10;
             seats[smallBlindIndex].chips -= 10;
 
-            seats[bigBlindIndex].bet = 10;
+            seats[bigBlindIndex].bet = 20;
             seats[bigBlindIndex].chips -= 20;
+
+            seats.forEach((seat) => { if (seat) seat.status = 0; });
 
             io.to(tableId).emit('getRoom', table);
 

@@ -30,6 +30,7 @@ module.exports = {
             player.cards = [null, null];
             player.chips = 1000;
             player.bet = 0;
+            player.status = 3;
         }
 
         tables.get(id).currentDraw.seats[seatNumber] = player;

@@ -40,6 +40,17 @@ export default class Seat extends Component {
         top: '-60%',
     };
 
+    static betStyles = {
+        position: 'absolute',
+        border: '1px solid black',
+        backgroundColor: 'orange',
+        borderRadius: '50%',
+        width: '80px',
+        height: '50px',
+        top: '-15%',
+        right: '-15%',
+    };
+
     constructor(props) {
         super(props);
 
@@ -90,16 +101,20 @@ export default class Seat extends Component {
 
     render() {
         const { player } = this.props;
+        const cards = player && player.cards.map(card => card || '0-0');
 
         return (
             <div {...this.getSeatProperties()}>
-                { player && player.cards[0] && player.cards[1] && <div>
-                    <img src={`../img/cards/${player.cards[0]}.svg`} style={{ ...Seat.cardStyles, left: '10%' }} alt={`../img/cards/${player.cards[0]}.svg`} />
-                    <img src={`../img/cards/${player.cards[1]}.svg`} style={{ ...Seat.cardStyles, right: '10%' }} alt={`../img/cards/${player.cards[1]}.svg`} />
+                { player && player.status !== 3 && <div>
+                    <img src={`../img/cards/${cards[0]}.svg`} style={{ ...Seat.cardStyles, left: '10%' }} alt={cards[0]} />
+                    <img src={`../img/cards/${cards[1]}.svg`} style={{ ...Seat.cardStyles, right: '10%' }} alt={cards[1]} />
                 </div>}
                 <div>
                     {player ? `${player.playerName} - ${player.chips}` : 'Click to sit!'}
                 </div>
+                { player && player.bet !== 0 && <div style={Seat.betStyles}>
+                    {player.bet}
+                </div>}
             </div>
         );
     }
