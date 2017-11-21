@@ -8,7 +8,7 @@ module.exports = {
         table.currentDraw = {
             seats: new Array(8).fill(null),
             hasStarted: false,
-            playerInTurn: -1,
+            playerInTurn: 0,
         };
 
         tables.set(table.id, table);
