@@ -32,20 +32,42 @@ io.on('connection', (socket) => {
         const tableId = getTableId();
         const table = tables.getById(tableId);
         const { currentDraw } = table;
-        const seats = currentDraw.seats.filter(seat => seat);
+        const { seats } = currentDraw;
 
-        if (seats.length > 1 && !currentDraw.hasStarted) {
+        if (seats.filter(seat => seat).length > 1 && !currentDraw.hasStarted) {
             currentDraw.hasStarted = true;
-            const alreadyGeneratedCards = new Set();
-            
-            seats.forEach((seat) => {
-                seat.cards = pokerEngine.generateCards(2, alreadyGeneratedCards)
-                    .map(card => card.signature);
 
-                io.to(seat.playerId).emit('updatePlayer', {
-                    seatNumber: seat.seatNumber,
-                    player: seat,
-                });
+            const seatsIndices = [];
+            seats.forEach((seat, index) => {
+                if (seat) seatsIndices.push(index);
+            });
+
+            let nextPlayerIndex = seatsIndices.findIndex(i => i > currentDraw.playerInTurn);
+            if (nextPlayerIndex === -1) nextPlayerIndex = 0;
+            currentDraw.playerInTurn = seatsIndices[nextPlayerIndex];
+
+            const bigBlindIndex = seatsIndices[((nextPlayerIndex - 1) + seatsIndices.length) % seatsIndices.length];
+            const smallBlindIndex = seatsIndices[((nextPlayerIndex - 2) + seatsIndices.length) % seatsIndices.length];
+
+            seats[smallBlindIndex].bet = 10;
+            seats[smallBlindIndex].chips -= 10;
+
+            seats[bigBlindIndex].bet = 10;
+            seats[bigBlindIndex].chips -= 20;
+
+            io.to(tableId).emit('getRoom', table);
+
+            const alreadyGeneratedCards = new Set();
+            seats.forEach((seat) => {
+                if (seat) {
+                    seat.cards = pokerEngine.generateCards(2, alreadyGeneratedCards)
+                        .map(card => card.signature);
+
+                    io.to(seat.playerId).emit('updatePlayer', {
+                        seatNumber: seat.seatNumber,
+                        player: seat,
+                    });
+                }
             });
         }
     };
