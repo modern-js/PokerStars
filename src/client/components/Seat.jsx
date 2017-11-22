@@ -105,7 +105,7 @@ export default class Seat extends Component {
 
         return (
             <div {...this.getSeatProperties()}>
-                { player && player.status !== 3 && <div>
+                { player && player.isPlaying && <div>
                     <img src={`../img/cards/${cards[0]}.svg`} style={{ ...Seat.cardStyles, left: '10%' }} alt={cards[0]} />
                     <img src={`../img/cards/${cards[1]}.svg`} style={{ ...Seat.cardStyles, right: '10%' }} alt={cards[1]} />
                 </div>}

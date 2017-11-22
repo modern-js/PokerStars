@@ -12,10 +12,9 @@ export default class Controllers extends Component {
     static step = 10;
 
     static propTypes = {
-        maxBet: PropTypes.number.isRequired,
+        chips: PropTypes.number.isRequired,
         amountToCall: PropTypes.number.isRequired,
-        canCall: PropTypes.bool.isRequired,
-        canRaise: PropTypes.bool.isRequired,
+        previousBet: PropTypes.number.isRequired,
         handleAction: PropTypes.func.isRequired,
     };
 
@@ -23,21 +22,34 @@ export default class Controllers extends Component {
         super(props);
 
         this.state = {
-            betValue: this.props.amountToCall + Controllers.step,
+            betValue: this.props.amountToCall + Controllers.step + this.props.previousBet,
         };
     }
 
     render() {
+        console.log(this.props.amountToCall);
+        console.log(this.props.previousBet);
+        console.log(this.state.betValue);
+
+        const canRaise = this.props.chips > this.props.amountToCall;
+        const canCheck = this.props.amountToCall === 0;
+        const canCall = this.props.amountToCall > 0 && this.props.chips > 0;
+        const amountCallable = this.props.chips >= this.props.amountToCall ? this.props.amountToCall : this.props.chips;
+
+        const minBet = this.props.amountToCall + Controllers.step + this.props.previousBet;
+        const maxBet = this.props.chips + this.props.previousBet;
+
         return (
             <div style={Controllers.controllersStyles}>
                 <div>
-                    <input type="range" value={this.state.betValue} min={this.props.amountToCall + Controllers.step} max={this.props.maxBet} step={Controllers.step} onChange={e => this.setState({ betValue: e.target.value })} />
+                    <input disabled={!canRaise} type="range" value={this.state.betValue} min={minBet} max={maxBet} step={Controllers.step} onChange={e => this.setState({ betValue: Number.parseInt(e.target.value) })} />
                     <span>{ this.state.betValue }</span>
                 </div>
                 <div>
-                    <button onClick={this.props.handleAction(0)}>Fold</button>
-                    <button disabled={!this.props.canCall} onClick={this.props.handleAction(1)}>Call{this.props.canCall ? ` ${this.props.amountToCall}` : ''}</button>
-                    <button disabled={!this.props.canRaise} onClick={this.props.handleAction(2, this.state.betValue)}>Raise To {this.props.canRaise ? ` ${this.state.betValue}` : ''}</button>
+                    <button disabled={!canCheck} onClick={() => { this.props.handleAction(1); }}>Check</button>
+                    <button disabled={!canCall} onClick={() => { this.props.handleAction(2); }}>Call {canCall && amountCallable}</button>
+                    <button disabled={!canRaise} onClick={() => { this.props.handleAction(3, this.state.betValue - this.props.previousBet); }}>Raise {canRaise && `To ${this.state.betValue}`}</button>
+                    <button onClick={() => { this.props.handleAction(4); }}>Fold</button>
                 </div>
             </div>
         );

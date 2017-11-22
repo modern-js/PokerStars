@@ -51,13 +51,16 @@ export default class Table extends Component {
 
         this.state = {
             table: null,
-            hasJoined: false,
+            seatNumber: null,
         };
     }
 
     componentDidMount() {
         socket.subscribeForEvent('getRoom', this.getTable);
         socket.subscribeForEvent('updatePlayer', this.updatePlayer);
+        socket.subscribeForEvent('updateCards', this.updateCards);
+        socket.subscribeForEvent('updatePlayerInTurn', this.updatePlayerInTurn);
+        socket.subscribeForEvent('drawFinished', this.finishDraw);
 
         socket.emitEvent('getRoom', this.props.match.params.id);
     }
@@ -65,8 +68,11 @@ export default class Table extends Component {
     componentWillUnmount() {
         socket.unsubscribeForEvent('getRoom', this.getTable);
         socket.unsubscribeForEvent('updatePlayer', this.updatePlayer);
+        socket.unsubscribeForEvent('updateCards', this.updateCards);
+        socket.unsubscribeForEvent('updatePlayerInTurn', this.updatePlayerInTurn);
+        socket.unsubscribeForEvent('drawFinished', this.finishDraw);
 
-        if (this.state.hasJoined) {
+        if (this.state.seatNumber !== null) {
             window.removeEventListener('beforeunload', this.warnOnExit);
             window.removeEventListener('unload', this.leaveRoom);
             this.leaveRoom();
@@ -88,6 +94,24 @@ export default class Table extends Component {
         this.setState({ table });
     };
 
+    updateCards = (cards) => {
+        const table = this.state.table;
+        table.currentDraw.cards = cards;
+
+        this.setState({ table });
+    };
+
+    updatePlayerInTurn = (playerInTurn) => {
+        const table = this.state.table;
+        table.currentDraw.playerInTurn = playerInTurn;
+
+        this.setState({ table });
+    };
+
+    finishDraw = (data) => {
+
+    };
+
     joinNewPlayer = (seatNumber) => {
         const playerName = window.prompt('Enter your nickname!');
 
@@ -97,7 +121,7 @@ export default class Table extends Component {
                 seatNumber,
             };
 
-            this.setState({ hasJoined: true });
+            this.setState({ seatNumber });
 
             socket.emitEvent('newPlayer', player);
             window.addEventListener('beforeunload', this.warnOnExit);
@@ -116,7 +140,10 @@ export default class Table extends Component {
 
 
     handleControllerPressed = (action, betAmount) => {
-
+        socket.emitEvent('actionTaken', {
+            action,
+            betAmount,
+        });
     };
 
     render() {
@@ -126,6 +153,7 @@ export default class Table extends Component {
             return null;
         }
 
+        const currentPlayer = table.currentDraw.seats[this.state.seatNumber];
         const seats = [];
 
         for (let i = 0; i < 8; i += 1) {
@@ -140,19 +168,19 @@ export default class Table extends Component {
                 key: i,
             };
 
-            if (seatProps.player || !this.state.hasJoined) {
+            if (seatProps.player || this.state.seatNumber === null) {
                 seats.push(<Seat {...seatProps} />);
             }
         }
 
-        // TODO: show controllers only when player isInTurn
         return (
             <div>
-                <Prompt message={Table.exitMessage} when={this.state.hasJoined} />
+                <Prompt message={Table.exitMessage} when={this.state.seatNumber !== null} />
                 <div style={Table.tableStyles}>
                     {seats}
                 </div>
-                <Controllers maxBet={400} amountToCall={100} canCall={true} canRaise={true} handleAction={this.handleControllerPressed} />
+                {this.state.table.currentDraw.playerInTurn === this.state.seatNumber &&
+                <Controllers chips={currentPlayer.chips} amountToCall={currentPlayer.toCall} previousBet={currentPlayer.bet} handleAction={this.handleControllerPressed} />}
             </div>
         );
     }
