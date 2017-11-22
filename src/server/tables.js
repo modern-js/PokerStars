@@ -12,6 +12,7 @@ module.exports = {
             smallBlind: -1,
             timesChecked: 0,
             state: 0,
+            totalBets: 0,
             cards: [],
         };
 
