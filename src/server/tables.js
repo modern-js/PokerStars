@@ -8,7 +8,11 @@ module.exports = {
         table.currentDraw = {
             seats: new Array(8).fill(null),
             hasStarted: false,
-            playerInTurn: 0,
+            playerInTurn: -1,
+            smallBlind: -1,
+            timesChecked: 0,
+            state: 0,
+            cards: [],
         };
 
         tables.set(table.id, table);
@@ -30,7 +34,9 @@ module.exports = {
             player.cards = [null, null];
             player.chips = 1000;
             player.bet = 0;
-            player.status = 3;
+            player.toCall = 0;
+            player.playsFor = 0;
+            player.isPlaying = false;
         }
 
         tables.get(id).currentDraw.seats[seatNumber] = player;
@@ -38,8 +44,7 @@ module.exports = {
     },
     getPlayerSeatIndex(tableId, playerId) {
         const tableSeats = tables.get(tableId).currentDraw.seats;
-        const seatIndex = tableSeats.findIndex(seat => seat && seat.playerId === playerId);
-        return seatIndex;
+        return tableSeats.findIndex(seat => seat && seat.playerId === playerId);
     },
     toSimpleViewModel(table) {
         return {

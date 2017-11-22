@@ -28,6 +28,19 @@ app.set('io', io);
 io.on('connection', (socket) => {
     const getTableId = () => Object.keys(socket.rooms).filter(room => room !== socket.id)[0];
 
+    const findNextPlayer = (seats, playerInTurn) => {
+        for (let i = (playerInTurn + 1) % seats.length; i < seats.length; i += 1, i %= seats.length) {
+            if (seats[i]) return i;
+        }
+    };
+
+    const findPreviousPlayer = (seats, playerInTurn) => {
+        for (let i = playerInTurn - 1 < 0 ? seats.length - 1 : playerInTurn - 1; i >= 0; i -= 1) {
+            if (seats[i]) return i;
+            if (i <= 0) i = seats.length;
+        }
+    };
+
     const startNewDeal = () => {
         const tableId = getTableId();
         const table = tables.getById(tableId);
@@ -36,28 +49,31 @@ io.on('connection', (socket) => {
 
         if (seats.filter(seat => seat).length > 1 && !currentDraw.hasStarted) {
             currentDraw.hasStarted = true;
+            currentDraw.playerInTurn = findNextPlayer(seats, currentDraw.playerInTurn);
 
-            const seatsIndices = [];
-            seats.forEach((seat, index) => {
-                if (seat) seatsIndices.push(index);
+            const bigBlindIndex = findPreviousPlayer(seats, currentDraw.playerInTurn);
+            const smallBlindIndex = findPreviousPlayer(seats, bigBlindIndex);
+            currentDraw.smallBlind = smallBlindIndex;
+
+            seats.forEach((seat) => {
+                if (seat) {
+                    seat.isPlaying = true;
+                    seat.toCall = 20;
+                }
             });
-
-            let nextPlayerIndex = seatsIndices.findIndex(i => i > currentDraw.playerInTurn);
-            if (nextPlayerIndex === -1) nextPlayerIndex = 0;
-            currentDraw.playerInTurn = seatsIndices[nextPlayerIndex];
-
-            const bigBlindIndex = seatsIndices[((nextPlayerIndex - 1) + seatsIndices.length) % seatsIndices.length];
-            const smallBlindIndex = seatsIndices[((nextPlayerIndex - 2) + seatsIndices.length) % seatsIndices.length];
 
             seats[smallBlindIndex].bet = 10;
             seats[smallBlindIndex].chips -= 10;
+            seats[smallBlindIndex].playsFor = 10;
+            seats[smallBlindIndex].toCall = 10;
 
             seats[bigBlindIndex].bet = 20;
             seats[bigBlindIndex].chips -= 20;
-
-            seats.forEach((seat) => { if (seat) seat.status = 0; });
+            seats[bigBlindIndex].playsFor = 20;
+            seats[bigBlindIndex].toCall = 0;
 
             io.to(tableId).emit('getRoom', table);
+            io.to(tableId).emit('updatePlayerInTurn', currentDraw.playerInTurn);
 
             const alreadyGeneratedCards = new Set();
             seats.forEach((seat) => {
@@ -150,5 +166,132 @@ io.on('connection', (socket) => {
         });
 
         io.emit('newTable', tables.toSimpleViewModel(table));
+    });
+
+    socket.on('actionTaken', (data) => {
+        const tableId = getTableId();
+        const table = tables.getById(tableId);
+
+        const seatNumber = tables.getPlayerSeatIndex(tableId, socket.id);
+        const { currentDraw } = table;
+
+        if (seatNumber === -1) {
+            socket.emit('error', { message: 'You are not playing on this table!' });
+            return;
+        }
+
+        if (currentDraw.playerInTurn !== seatNumber) {
+            socket.emit('error', { message: 'You are not in turn!' });
+            return;
+        }
+
+        const player = currentDraw.seats[seatNumber];
+
+        switch (data.action) {
+            case 1: {
+                if (player.toCall) {
+                    socket.emit('error', { message: 'You cannot check!' });
+                    return;
+                }
+
+                currentDraw.timesChecked += 1;
+                break;
+            }
+            case 2: {
+                if (!player.toCall) {
+                    socket.emit('error', { message: 'You cannot call!' });
+                    return;
+                }
+
+                const amountCallable = player.chips >= player.toCall ? player.toCall : player.chips;
+
+                player.chips -= amountCallable;
+                player.toCall -= amountCallable;
+                player.playsFor += amountCallable;
+                player.bet += amountCallable;
+
+                currentDraw.timesChecked += 1;
+                break;
+            }
+            case 3: {
+                const totalBet = data.betAmount + player.toCall;
+
+                if (player.chips < totalBet) {
+                    socket.emit('error', { message: 'You cannot raise!' });
+                    return;
+                }
+
+                currentDraw.seats.forEach((seat) => { if (seat) seat.toCall += data.betAmount; });
+
+                player.chips -= data.betAmount;
+                player.bet += data.betAmount;
+                player.playsFor += data.betAmount;
+                player.toCall -= (2 * data.betAmount);
+
+                currentDraw.timesChecked = 1;
+                break;
+            }
+            case 4: {
+                player.isPlaying = false;
+                break;
+            }
+            default: {
+                socket.emit('error', { message: 'Invalid action!' });
+                return;
+            }
+        }
+
+        const playerWithoutCards = { ...player };
+        playerWithoutCards.cards = [null, null];
+
+        socket.broadcast.to(tableId).emit('updatePlayer', {
+            seatNumber: player.seatNumber,
+            player: playerWithoutCards,
+        });
+
+        socket.emit('updatePlayer', {
+            seatNumber: player.seatNumber,
+            player,
+        });
+
+        if (currentDraw.timesChecked !== currentDraw.seats.filter(seat => seat && seat.isPlaying).length) {
+            currentDraw.playerInTurn = findNextPlayer(currentDraw.seats, currentDraw.playerInTurn);
+        } else {
+            if (currentDraw.state === 3) {
+                io.to(tableId).emit('drawFinished', {
+                    winners: [{
+                        seatNumber: 0,
+                        chipsWon: 0,
+                    }]
+                });
+            }
+
+            const alreadyGeneratedCards = new Set(currentDraw.cards);
+            currentDraw.seats.forEach((seat) => {
+                if (seat) {
+                    seat.cards.forEach((card) => {
+                        if (card) alreadyGeneratedCards.add(card);
+                    });
+                }
+            });
+
+            const numberOfCardsToGenerate = currentDraw.state === 1 ? 3 : 1;
+
+            currentDraw.state += 1;
+            currentDraw.playerInTurn = findNextPlayer(currentDraw.seats, currentDraw.smallBlind - 1);
+            currentDraw.timesChecked = 0;
+            currentDraw.cards.push(...pokerEngine.generateCards(numberOfCardsToGenerate, alreadyGeneratedCards));
+
+            io.to(tableId).emit('updateCards', currentDraw.cards);
+        }
+
+        io.to(tableId).emit('updatePlayerInTurn', currentDraw.playerInTurn);
+
+        io.to(currentDraw.seats[currentDraw.playerInTurn].playerId).emit('updatePlayer', {
+            seatNumber: currentDraw.playerInTurn,
+            player: currentDraw.seats[currentDraw.playerInTurn],
+        });
+        console.log(player);
+        console.log(currentDraw.seats[currentDraw.playerInTurn]);
     });
 });
