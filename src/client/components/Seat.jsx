@@ -28,6 +28,7 @@ export default class Seat extends Component {
         position: 'absolute',
         padding: '1%',
         borderRadius: '50%',
+        fontSize: '2vw',
         lineHeight: '8vh',
     };
 
@@ -45,10 +46,12 @@ export default class Seat extends Component {
         border: '1px solid black',
         backgroundColor: 'orange',
         borderRadius: '50%',
-        width: '80px',
-        height: '50px',
+        width: '40%',
+        height: '50%',
         top: '-15%',
         right: '-15%',
+        fontSize: '1.7vw',
+        lineHeight: '6vh',
     };
 
     constructor(props) {

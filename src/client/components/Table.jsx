@@ -20,17 +20,43 @@ export default class Table extends Component {
 
     static tableStyles = {
         width: '70%',
-        minWidth: '500px',
         height: '75%',
-        minHeight: '250px',
         backgroundColor: 'red',
         position: 'absolute',
-        left: '15%',
+        left: '13.5%',
         top: '12%',
         borderRadius: '30%/50%',
-        border: '20px double black',
+        border: '1.4vw double black',
         boxShadow: 'inset 0 0 35px 6px rgba(0,0,0,0,0.75)',
         zIndex: '-2',
+    };
+
+    static totalBetsStyles = {
+        width: '11%',
+        height: '12%',
+        backgroundColor: 'orange',
+        position: 'absolute',
+        top: '58%',
+        left: '46%',
+        borderRadius: '50%',
+        boxShadow: '0 0 10px 2px rgba(0,0,0,0,0.75)',
+        textAlign: 'center',
+        fontSize: '10vh',
+    };
+
+    static cardsDivStyles = {
+        position: 'absolute',
+        left: '33.5%',
+        top: '26%',
+        width: '66.5%',
+        height: '74%',
+    };
+
+    static cardsStyles = {
+        width: '8%',
+        borderRadius: '5px',
+        margin: '1%',
+        boxShadow: '0 0 10px 2px',
     };
 
     static exitMessage = 'Are you sure you want to leave?';
@@ -58,7 +84,7 @@ export default class Table extends Component {
     componentDidMount() {
         socket.subscribeForEvent('getRoom', this.getTable);
         socket.subscribeForEvent('updatePlayer', this.updatePlayer);
-        socket.subscribeForEvent('updateCards', this.updateCards);
+        socket.subscribeForEvent('updateTableState', this.updateTableState);
         socket.subscribeForEvent('updatePlayerInTurn', this.updatePlayerInTurn);
         socket.subscribeForEvent('drawFinished', this.finishDraw);
 
@@ -68,7 +94,7 @@ export default class Table extends Component {
     componentWillUnmount() {
         socket.unsubscribeForEvent('getRoom', this.getTable);
         socket.unsubscribeForEvent('updatePlayer', this.updatePlayer);
-        socket.unsubscribeForEvent('updateCards', this.updateCards);
+        socket.unsubscribeForEvent('updateTableState', this.updateTableState);
         socket.unsubscribeForEvent('updatePlayerInTurn', this.updatePlayerInTurn);
         socket.unsubscribeForEvent('drawFinished', this.finishDraw);
 
@@ -94,9 +120,10 @@ export default class Table extends Component {
         this.setState({ table });
     };
 
-    updateCards = (cards) => {
+    updateTableState = (response) => {
         const table = this.state.table;
-        table.currentDraw.cards = cards;
+        table.currentDraw.cards = response.cards;
+        table.currentDraw.totalBets = response.totalBets;
 
         this.setState({ table });
     };
@@ -157,30 +184,55 @@ export default class Table extends Component {
         const seats = [];
 
         for (let i = 0; i < 8; i += 1) {
-            const seatProps = {
-                left: `${Table.seatsPositions[i][0]}%`,
-                right: `${Table.seatsPositions[i][1]}%`,
-                top: `${Table.seatsPositions[i][2]}%`,
-                bottom: `${Table.seatsPositions[i][3]}%`,
-                player: table.currentDraw.seats[i],
-                joinPlayer: this.joinNewPlayer,
-                seatNumber: i,
-                key: i,
-            };
+            if (table.currentDraw.seats[i] || this.state.seatNumber === null) {
+                const seatProps = {
+                    left: `${Table.seatsPositions[i][0]}%`,
+                    right: `${Table.seatsPositions[i][1]}%`,
+                    top: `${Table.seatsPositions[i][2]}%`,
+                    bottom: `${Table.seatsPositions[i][3]}%`,
+                    player: table.currentDraw.seats[i],
+                    joinPlayer: this.joinNewPlayer,
+                    seatNumber: i,
+                    key: i,
+                };
 
-            if (seatProps.player || this.state.seatNumber === null) {
                 seats.push(<Seat {...seatProps} />);
             }
         }
 
+        const cards = table.currentDraw.cards.map(card => (
+            <img
+                key={card}
+                src={`../img/cards/${card}.svg`}
+                alt={card}
+                style={Table.cardsStyles}
+            />));
+
         return (
             <div>
                 <Prompt message={Table.exitMessage} when={this.state.seatNumber !== null} />
+
                 <div style={Table.tableStyles}>
                     {seats}
                 </div>
-                {this.state.table.currentDraw.playerInTurn === this.state.seatNumber &&
-                <Controllers chips={currentPlayer.chips} amountToCall={currentPlayer.toCall} previousBet={currentPlayer.bet} handleAction={this.handleControllerPressed} />}
+
+                {table.currentDraw.hasStarted &&
+                <div style={Table.totalBetsStyles}>
+                    {table.currentDraw.totalBets}
+                </div>}
+
+                {table.currentDraw.cards.length > 0 &&
+                <div style={Table.cardsDivStyles}>
+                    {cards}
+                </div>}
+
+                {table.currentDraw.playerInTurn === this.state.seatNumber &&
+                <Controllers
+                    chips={currentPlayer.chips}
+                    amountToCall={currentPlayer.toCall}
+                    previousBet={currentPlayer.bet}
+                    handleAction={this.handleControllerPressed}
+                />}
             </div>
         );
     }

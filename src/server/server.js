@@ -29,16 +29,21 @@ io.on('connection', (socket) => {
     const getTableId = () => Object.keys(socket.rooms).filter(room => room !== socket.id)[0];
 
     const findNextPlayer = (seats, playerInTurn) => {
-        for (let i = (playerInTurn + 1) % seats.length; i < seats.length; i += 1, i %= seats.length) {
-            if (seats[i]) return i;
+        const seatsCount = seats.length;
+        for (let i = (playerInTurn + 1) % seatsCount; i < seatsCount; i += 1, i %= seatsCount) {
+            if (seats[i] && seats[i].isPlaying && seats[i].chips > 0) return i;
         }
+
+        return null;
     };
 
     const findPreviousPlayer = (seats, playerInTurn) => {
         for (let i = playerInTurn - 1 < 0 ? seats.length - 1 : playerInTurn - 1; i >= 0; i -= 1) {
-            if (seats[i]) return i;
+            if (seats[i] && seats[i].isPlaying && seats[i].chips > 0) return i;
             if (i <= 0) i = seats.length;
         }
+
+        return null;
     };
 
     const startNewDeal = () => {
@@ -49,11 +54,6 @@ io.on('connection', (socket) => {
 
         if (seats.filter(seat => seat).length > 1 && !currentDraw.hasStarted) {
             currentDraw.hasStarted = true;
-            currentDraw.playerInTurn = findNextPlayer(seats, currentDraw.playerInTurn);
-
-            const bigBlindIndex = findPreviousPlayer(seats, currentDraw.playerInTurn);
-            const smallBlindIndex = findPreviousPlayer(seats, bigBlindIndex);
-            currentDraw.smallBlind = smallBlindIndex;
 
             seats.forEach((seat) => {
                 if (seat) {
@@ -61,6 +61,11 @@ io.on('connection', (socket) => {
                     seat.toCall = 20;
                 }
             });
+
+            currentDraw.playerInTurn = findNextPlayer(seats, currentDraw.playerInTurn);
+            const bigBlindIndex = findPreviousPlayer(seats, currentDraw.playerInTurn);
+            const smallBlindIndex = findPreviousPlayer(seats, bigBlindIndex);
+            currentDraw.smallBlind = smallBlindIndex;
 
             seats[smallBlindIndex].bet = 10;
             seats[smallBlindIndex].chips -= 10;
@@ -226,6 +231,7 @@ io.on('connection', (socket) => {
                 player.chips -= data.betAmount;
                 player.bet += data.betAmount;
                 player.playsFor += data.betAmount;
+                // TODO: fix this
                 player.toCall -= (2 * data.betAmount);
 
                 currentDraw.timesChecked = 1;
@@ -254,7 +260,9 @@ io.on('connection', (socket) => {
             player,
         });
 
-        if (currentDraw.timesChecked !== currentDraw.seats.filter(seat => seat && seat.isPlaying).length) {
+        // check if all players has folded
+        if (currentDraw.timesChecked !==
+            currentDraw.seats.filter(seat => seat && seat.isPlaying && seat.chips > 0).length) {
             currentDraw.playerInTurn = findNextPlayer(currentDraw.seats, currentDraw.playerInTurn);
         } else {
             if (currentDraw.state === 3) {
@@ -262,27 +270,33 @@ io.on('connection', (socket) => {
                     winners: [{
                         seatNumber: 0,
                         chipsWon: 0,
-                    }]
+                    }],
                 });
             }
 
             const alreadyGeneratedCards = new Set(currentDraw.cards);
+            let totalBets = 0;
+
             currentDraw.seats.forEach((seat) => {
                 if (seat) {
-                    seat.cards.forEach((card) => {
-                        if (card) alreadyGeneratedCards.add(card);
-                    });
+                    alreadyGeneratedCards.add(seat.cards[0]);
+                    alreadyGeneratedCards.add(seat.cards[1]);
+                    totalBets += seat.bet;
                 }
             });
-
-            const numberOfCardsToGenerate = currentDraw.state === 1 ? 3 : 1;
 
             currentDraw.state += 1;
             currentDraw.playerInTurn = findNextPlayer(currentDraw.seats, currentDraw.smallBlind - 1);
             currentDraw.timesChecked = 0;
-            currentDraw.cards.push(...pokerEngine.generateCards(numberOfCardsToGenerate, alreadyGeneratedCards));
+            currentDraw.totalBets = totalBets;
 
-            io.to(tableId).emit('updateCards', currentDraw.cards);
+            const numberOfCardsToGenerate = currentDraw.state === 1 ? 3 : 1;
+            currentDraw.cards.push(...pokerEngine.generateCards(numberOfCardsToGenerate, alreadyGeneratedCards).map(card => card.signature));
+
+            io.to(tableId).emit('updateTableState', {
+                cards: currentDraw.cards,
+                totalBets: currentDraw.totalBets,
+            });
         }
 
         io.to(tableId).emit('updatePlayerInTurn', currentDraw.playerInTurn);
@@ -291,7 +305,5 @@ io.on('connection', (socket) => {
             seatNumber: currentDraw.playerInTurn,
             player: currentDraw.seats[currentDraw.playerInTurn],
         });
-        console.log(player);
-        console.log(currentDraw.seats[currentDraw.playerInTurn]);
     });
 });
