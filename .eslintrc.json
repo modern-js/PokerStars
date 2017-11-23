@@ -7,7 +7,8 @@
         "react/jsx-indent": ["error", 4],
         "react/jsx-indent-props": ["error", 4],
         "no-param-reassign": ["error", { "props": false }],
-        "no-alert": "off"
+        "no-alert": "off",
+        "no-console": "off"
     },
     "globals": {
         "document": true,
