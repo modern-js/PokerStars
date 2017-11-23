@@ -4,9 +4,10 @@ import PropTypes from 'prop-types';
 export default class Controllers extends Component {
     static controllersStyles = {
         bottom: '3%',
-        right: '3%',
+        right: '1%',
         position: 'absolute',
         border: '2px solid black',
+        width: '17%',
     };
 
     static step = 10;
@@ -41,8 +42,6 @@ export default class Controllers extends Component {
         const minBet = this.props.amountToCall + Controllers.step + this.props.previousBet;
         const maxBet = this.props.chips + this.props.previousBet;
 
-        const raiseAmount = this.state.betValue - this.props.previousBet;
-
         return (
             <div style={Controllers.controllersStyles}>
                 <div>
@@ -54,27 +53,37 @@ export default class Controllers extends Component {
                         max={maxBet}
                         step={Controllers.step}
                         onChange={this.handleSliderChange}
+                        style={{ width: '80%' }}
                     />
 
-                    <span>{ this.state.betValue }</span>
+                    {canRaise &&
+                    <span style={{ width: '20%' }}>
+                        { this.state.betValue }
+                    </span>}
                 </div>
                 <div>
                     <button
                         disabled={!canCheck}
                         onClick={() => { this.props.handleAction(1); }}
+                        style={{ width: '19%' }}
                     >Check</button>
 
                     <button
                         disabled={!canCall}
                         onClick={() => { this.props.handleAction(2); }}
+                        style={{ width: '28%' }}
                     >Call {canCall && amountCallable}</button>
 
                     <button
                         disabled={!canRaise}
-                        onClick={() => { this.props.handleAction(3, raiseAmount); }}
+                        onClick={() => { this.props.handleAction(3, this.state.betValue - this.props.previousBet); }}
+                        style={{ width: '37%' }}
                     >Raise {canRaise && `To ${this.state.betValue}`}</button>
 
-                    <button onClick={() => { this.props.handleAction(4); }}>Fold</button>
+                    <button
+                        onClick={() => { this.props.handleAction(4); }}
+                        style={{ width: '16%' }}
+                    >Fold</button>
                 </div>
             </div>
         );

@@ -37,7 +37,7 @@ export default class Table extends Component {
         backgroundColor: 'orange',
         position: 'absolute',
         top: '58%',
-        left: '46%',
+        left: '44.5%',
         borderRadius: '50%',
         boxShadow: '0 0 10px 2px rgba(0,0,0,0,0.75)',
         textAlign: 'center',
@@ -124,6 +124,14 @@ export default class Table extends Component {
         const table = this.state.table;
         table.currentDraw.cards = response.cards;
         table.currentDraw.totalBets = response.totalBets;
+
+        if (response.updatePlayersBets) {
+            table.currentDraw.seats.forEach((seat) => {
+                if (seat) {
+                    seat.bet = 0;
+                }
+            });
+        }
 
         this.setState({ table });
     };

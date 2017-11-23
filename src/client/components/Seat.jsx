@@ -108,14 +108,18 @@ export default class Seat extends Component {
 
         return (
             <div {...this.getSeatProperties()}>
-                { player && player.isPlaying && <div>
+                { player && player.isPlaying &&
+                <div>
                     <img src={`../img/cards/${cards[0]}.svg`} style={{ ...Seat.cardStyles, left: '10%' }} alt={cards[0]} />
                     <img src={`../img/cards/${cards[1]}.svg`} style={{ ...Seat.cardStyles, right: '10%' }} alt={cards[1]} />
                 </div>}
+
                 <div>
                     {player ? `${player.playerName} - ${player.chips}` : 'Click to sit!'}
                 </div>
-                { player && player.bet !== 0 && <div style={Seat.betStyles}>
+
+                { player && player.isPlaying &&
+                <div style={Seat.betStyles}>
                     {player.bet}
                 </div>}
             </div>

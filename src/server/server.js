@@ -28,6 +28,7 @@ app.set('io', io);
 io.on('connection', (socket) => {
     const getTableId = () => Object.keys(socket.rooms).filter(room => room !== socket.id)[0];
 
+    // TODO: use another method -> filter by the if statement and the get the seatNumber from the properties
     const findNextPlayer = (seats, playerInTurn) => {
         const seatsCount = seats.length;
         for (let i = (playerInTurn + 1) % seatsCount; i < seatsCount; i += 1, i %= seatsCount) {
@@ -127,7 +128,7 @@ io.on('connection', (socket) => {
         const tableId = getTableId();
         const table = tables.getById(tableId);
 
-        // If there is no such table or the seat is taken or the user is already playing on this table
+        // TODO: If there is no such table or the seat is taken or the user is already playing on this table
         if (!table ||
             table.currentDraw.seats[player.seatNumber] ||
             tables.getPlayerSeatIndex(tableId, socket.id) !== -1) {
@@ -219,22 +220,23 @@ io.on('connection', (socket) => {
                 break;
             }
             case 3: {
-                const totalBet = data.betAmount + player.toCall;
-
-                if (player.chips < totalBet) {
+                if (player.chips < data.betAmount || player.toCall >= data.betAmount) {
                     socket.emit('error', { message: 'You cannot raise!' });
                     return;
                 }
 
-                currentDraw.seats.forEach((seat) => { if (seat) seat.toCall += data.betAmount; });
-
                 player.chips -= data.betAmount;
                 player.bet += data.betAmount;
                 player.playsFor += data.betAmount;
-                // TODO: fix this
-                player.toCall -= (2 * data.betAmount);
+                player.toCall = 0;
 
                 currentDraw.timesChecked = 1;
+                currentDraw.seats.forEach((seat) => {
+                    if (seat) {
+                        seat.toCall = player.bet - seat.bet;
+                    }
+                });
+
                 break;
             }
             case 4: {
@@ -260,11 +262,11 @@ io.on('connection', (socket) => {
             player,
         });
 
-        // check if all players has folded
         if (currentDraw.timesChecked !==
             currentDraw.seats.filter(seat => seat && seat.isPlaying && seat.chips > 0).length) {
             currentDraw.playerInTurn = findNextPlayer(currentDraw.seats, currentDraw.playerInTurn);
         } else {
+            // TODO: end the game if it is in the 3rd state or there is only 1 player left playing
             if (currentDraw.state === 3) {
                 io.to(tableId).emit('drawFinished', {
                     winners: [{
@@ -282,28 +284,36 @@ io.on('connection', (socket) => {
                     alreadyGeneratedCards.add(seat.cards[0]);
                     alreadyGeneratedCards.add(seat.cards[1]);
                     totalBets += seat.bet;
+                    seat.bet = 0;
                 }
             });
 
             currentDraw.state += 1;
-            currentDraw.playerInTurn = findNextPlayer(currentDraw.seats, currentDraw.smallBlind - 1);
+            currentDraw.playerInTurn =
+                findNextPlayer(currentDraw.seats, currentDraw.smallBlind - 1);
             currentDraw.timesChecked = 0;
             currentDraw.totalBets = totalBets;
 
             const numberOfCardsToGenerate = currentDraw.state === 1 ? 3 : 1;
-            currentDraw.cards.push(...pokerEngine.generateCards(numberOfCardsToGenerate, alreadyGeneratedCards).map(card => card.signature));
+            const generatedCards = pokerEngine
+                .generateCards(numberOfCardsToGenerate, alreadyGeneratedCards)
+                .map(card => card.signature);
+
+            currentDraw.cards.push(...generatedCards);
 
             io.to(tableId).emit('updateTableState', {
                 cards: currentDraw.cards,
                 totalBets: currentDraw.totalBets,
+                updatePlayersBets: true,
             });
         }
 
-        io.to(tableId).emit('updatePlayerInTurn', currentDraw.playerInTurn);
+        const playerInTurn = currentDraw.seats[currentDraw.playerInTurn];
 
-        io.to(currentDraw.seats[currentDraw.playerInTurn].playerId).emit('updatePlayer', {
-            seatNumber: currentDraw.playerInTurn,
-            player: currentDraw.seats[currentDraw.playerInTurn],
+        io.to(playerInTurn.playerId).emit('updatePlayer', {
+            seatNumber: playerInTurn.seatNumber,
+            player: playerInTurn,
         });
+        io.to(tableId).emit('updatePlayerInTurn', playerInTurn.seatNumber);
     });
 });
