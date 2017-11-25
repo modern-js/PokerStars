@@ -53,20 +53,28 @@ io.on('connection', (socket) => {
         const { currentDraw } = table;
         const { seats } = currentDraw;
 
-        if (seats.filter(seat => seat).length > 1 && !currentDraw.hasStarted) {
-            currentDraw.hasStarted = true;
-
+        if (seats.filter(seat => seat).length > 1 && !currentDraw.isActive) {
             seats.forEach((seat) => {
                 if (seat) {
                     seat.isPlaying = true;
                     seat.toCall = 20;
+                    seat.bet = 0;
+                    seat.cards = [null, null];
+                    seat.playsFor = 0;
                 }
             });
 
-            currentDraw.playerInTurn = findNextPlayer(seats, currentDraw.playerInTurn);
-            const bigBlindIndex = findPreviousPlayer(seats, currentDraw.playerInTurn);
+            const playerInTurn = findNextPlayer(seats, currentDraw.playerInTurn);
+            const bigBlindIndex = findPreviousPlayer(seats, playerInTurn);
             const smallBlindIndex = findPreviousPlayer(seats, bigBlindIndex);
+
+            currentDraw.playerInTurn = playerInTurn;
             currentDraw.smallBlind = smallBlindIndex;
+            currentDraw.timesChecked = 0;
+            currentDraw.state = 0;
+            currentDraw.totalBets = 0;
+            currentDraw.cards = [];
+            currentDraw.isActive = true;
 
             seats[smallBlindIndex].bet = 10;
             seats[smallBlindIndex].chips -= 10;
@@ -128,7 +136,6 @@ io.on('connection', (socket) => {
         const tableId = getTableId();
         const table = tables.getById(tableId);
 
-        // TODO: If there is no such table or the seat is taken or the user is already playing on this table
         if (!table ||
             table.currentDraw.seats[player.seatNumber] ||
             tables.getPlayerSeatIndex(tableId, socket.id) !== -1) {
@@ -262,58 +269,80 @@ io.on('connection', (socket) => {
             player,
         });
 
-        if (currentDraw.timesChecked !==
-            currentDraw.seats.filter(seat => seat && seat.isPlaying && seat.chips > 0).length) {
+        const activePlayersWithChips = currentDraw.seats
+            .filter(seat => seat && seat.isPlaying && seat.chips > 0);
+
+        if (currentDraw.timesChecked !== activePlayersWithChips.length) {
             currentDraw.playerInTurn = findNextPlayer(currentDraw.seats, currentDraw.playerInTurn);
         } else {
-            // TODO: end the game if it is in the 3rd state or there is only 1 player left playing
-            if (currentDraw.state === 3) {
+            // check if all players except 1 are all in
+            const activePlayers = currentDraw.seats.filter(seat => seat && seat.isPlaying);
+
+            if (activePlayers.length === 1) {
+                const winner = activePlayers[0];
+                winner.chips += (currentDraw.totalBets + winner.bet);
+
+                currentDraw.isActive = false;
+                currentDraw.seats.forEach((seat) => {
+                    if (seat) {
+                        if (seat.chips === 0) {
+                            tables.addPlayer(tableId, seat.seatNumber, null);
+                        }
+                    }
+                });
+
+                io.emit('newTable', tables.toSimpleViewModel(table));
+
                 io.to(tableId).emit('drawFinished', {
                     winners: [{
-                        seatNumber: 0,
-                        chipsWon: 0,
+                        seatNumber: winner.seatNumber,
+                        chipsWon: currentDraw.totalBets,
                     }],
                 });
+
+                startNewDeal(table);
+            } else if (currentDraw.state === 3) {
+                // show the cards
+            } else {
+                const alreadyGeneratedCards = new Set(currentDraw.cards);
+
+                currentDraw.seats.forEach((seat) => {
+                    if (seat) {
+                        alreadyGeneratedCards.add(seat.cards[0]);
+                        alreadyGeneratedCards.add(seat.cards[1]);
+                        currentDraw.totalBets += seat.bet;
+                        seat.bet = 0;
+                    }
+                });
+
+                currentDraw.state += 1;
+                currentDraw.playerInTurn =
+                    findNextPlayer(currentDraw.seats, currentDraw.smallBlind - 1);
+                currentDraw.timesChecked = 0;
+
+                const numberOfCardsToGenerate = currentDraw.state === 1 ? 3 : 1;
+                const generatedCards = pokerEngine
+                    .generateCards(numberOfCardsToGenerate, alreadyGeneratedCards)
+                    .map(card => card.signature);
+
+                currentDraw.cards.push(...generatedCards);
+
+                io.to(tableId).emit('updateTableState', {
+                    cards: currentDraw.cards,
+                    totalBets: currentDraw.totalBets,
+                    updatePlayersBets: true,
+                });
             }
-
-            const alreadyGeneratedCards = new Set(currentDraw.cards);
-            let totalBets = 0;
-
-            currentDraw.seats.forEach((seat) => {
-                if (seat) {
-                    alreadyGeneratedCards.add(seat.cards[0]);
-                    alreadyGeneratedCards.add(seat.cards[1]);
-                    totalBets += seat.bet;
-                    seat.bet = 0;
-                }
-            });
-
-            currentDraw.state += 1;
-            currentDraw.playerInTurn =
-                findNextPlayer(currentDraw.seats, currentDraw.smallBlind - 1);
-            currentDraw.timesChecked = 0;
-            currentDraw.totalBets = totalBets;
-
-            const numberOfCardsToGenerate = currentDraw.state === 1 ? 3 : 1;
-            const generatedCards = pokerEngine
-                .generateCards(numberOfCardsToGenerate, alreadyGeneratedCards)
-                .map(card => card.signature);
-
-            currentDraw.cards.push(...generatedCards);
-
-            io.to(tableId).emit('updateTableState', {
-                cards: currentDraw.cards,
-                totalBets: currentDraw.totalBets,
-                updatePlayersBets: true,
-            });
         }
 
-        const playerInTurn = currentDraw.seats[currentDraw.playerInTurn];
+        if (currentDraw.isActive) {
+            const playerInTurn = currentDraw.seats[currentDraw.playerInTurn];
 
-        io.to(playerInTurn.playerId).emit('updatePlayer', {
-            seatNumber: playerInTurn.seatNumber,
-            player: playerInTurn,
-        });
-        io.to(tableId).emit('updatePlayerInTurn', playerInTurn.seatNumber);
+            io.to(playerInTurn.playerId).emit('updatePlayer', {
+                seatNumber: playerInTurn.seatNumber,
+                player: playerInTurn,
+            });
+            io.to(tableId).emit('updatePlayerInTurn', playerInTurn.seatNumber);
+        }
     });
 });
