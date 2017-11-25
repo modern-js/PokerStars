@@ -143,8 +143,8 @@ export default class Table extends Component {
         this.setState({ table });
     };
 
-    finishDraw = (data) => {
-
+    finishDraw = (winners) => {
+        console.log(winners);
     };
 
     joinNewPlayer = (seatNumber) => {
@@ -224,7 +224,7 @@ export default class Table extends Component {
                     {seats}
                 </div>
 
-                {table.currentDraw.hasStarted &&
+                {table.currentDraw.isActive &&
                 <div style={Table.totalBetsStyles}>
                     {table.currentDraw.totalBets}
                 </div>}

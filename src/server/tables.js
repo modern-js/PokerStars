@@ -7,7 +7,7 @@ module.exports = {
         table.id = uuid.v4();
         table.currentDraw = {
             seats: new Array(8).fill(null),
-            hasStarted: false,
+            isActive: false,
             playerInTurn: -1,
             smallBlind: -1,
             timesChecked: 0,
