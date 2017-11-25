@@ -72,7 +72,7 @@ io.on('connection', (socket) => {
             currentDraw.smallBlind = smallBlindIndex;
             currentDraw.timesChecked = 0;
             currentDraw.state = 0;
-            currentDraw.totalBets = 0;
+            currentDraw.totalBets = 30;
             currentDraw.cards = [];
             currentDraw.isActive = true;
 
@@ -184,7 +184,6 @@ io.on('connection', (socket) => {
     socket.on('actionTaken', (data) => {
         const tableId = getTableId();
         const table = tables.getById(tableId);
-
         const seatNumber = tables.getPlayerSeatIndex(tableId, socket.id);
         const { currentDraw } = table;
 
@@ -223,6 +222,7 @@ io.on('connection', (socket) => {
                 player.playsFor += amountCallable;
                 player.bet += amountCallable;
 
+                currentDraw.totalBets += amountCallable;
                 currentDraw.timesChecked += 1;
                 break;
             }
@@ -237,17 +237,26 @@ io.on('connection', (socket) => {
                 player.playsFor += data.betAmount;
                 player.toCall = 0;
 
+                currentDraw.totalBets += data.betAmount;
                 currentDraw.timesChecked = 1;
                 currentDraw.seats.forEach((seat) => {
-                    if (seat) {
-                        seat.toCall = player.bet - seat.bet;
-                    }
+                    if (seat) seat.toCall = player.bet - seat.bet;
                 });
 
                 break;
             }
             case 4: {
                 player.isPlaying = false;
+
+                const activePlayersWithChips = currentDraw.seats
+                    .filter(seat => seat && seat.isPlaying && seat.chips > 0);
+
+                const contributeAmount = player.playsFor / activePlayersWithChips.length;
+
+                activePlayersWithChips.forEach((activePlayer) => {
+                    activePlayer.playsFor += contributeAmount;
+                });
+
                 break;
             }
             default: {
@@ -280,27 +289,28 @@ io.on('connection', (socket) => {
 
             if (activePlayers.length === 1) {
                 const winner = activePlayers[0];
-                winner.chips += (currentDraw.totalBets + winner.bet);
+                winner.chips += winner.playsFor;
 
                 currentDraw.isActive = false;
                 currentDraw.seats.forEach((seat) => {
-                    if (seat) {
-                        if (seat.chips === 0) {
-                            tables.addPlayer(tableId, seat.seatNumber, null);
-                        }
+                    if (seat && seat.chips === 0) {
+                        tables.addPlayer(tableId, seat.seatNumber, null);
                     }
                 });
 
                 io.emit('newTable', tables.toSimpleViewModel(table));
 
+                io.to(tableId).emit('updatePlayerInTurn', -1);
+
                 io.to(tableId).emit('drawFinished', {
                     winners: [{
                         seatNumber: winner.seatNumber,
                         chipsWon: currentDraw.totalBets,
+                        winningHand: null,
                     }],
                 });
 
-                startNewDeal(table);
+                setTimeout(() => { startNewDeal(table); }, 5000);
             } else if (currentDraw.state === 3) {
                 // show the cards
             } else {
@@ -310,7 +320,6 @@ io.on('connection', (socket) => {
                     if (seat) {
                         alreadyGeneratedCards.add(seat.cards[0]);
                         alreadyGeneratedCards.add(seat.cards[1]);
-                        currentDraw.totalBets += seat.bet;
                         seat.bet = 0;
                     }
                 });
@@ -326,13 +335,13 @@ io.on('connection', (socket) => {
                     .map(card => card.signature);
 
                 currentDraw.cards.push(...generatedCards);
-
-                io.to(tableId).emit('updateTableState', {
-                    cards: currentDraw.cards,
-                    totalBets: currentDraw.totalBets,
-                    updatePlayersBets: true,
-                });
             }
+
+            io.to(tableId).emit('updateTableState', {
+                cards: currentDraw.cards,
+                totalBets: currentDraw.totalBets,
+                updatePlayersBets: true,
+            });
         }
 
         if (currentDraw.isActive) {
@@ -342,6 +351,7 @@ io.on('connection', (socket) => {
                 seatNumber: playerInTurn.seatNumber,
                 player: playerInTurn,
             });
+
             io.to(tableId).emit('updatePlayerInTurn', playerInTurn.seatNumber);
         }
     });
