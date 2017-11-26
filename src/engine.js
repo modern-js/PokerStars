@@ -114,38 +114,43 @@ function setupHandRanker(river) {
     };
 }
 
-function rankHands(river, hands) {
-    const rankHand = setupHandRanker(river);
-    return new Map(hands.map(hand => [hand, rankHand(hand)]));
-}
+function resolveWinner(firstHand, secondHand) {
+    if (firstHand.rank > secondHand.rank) return -1;
+    else if (firstHand.rank < secondHand.rank) return 1;
 
-function resolveWinner(firstCombination, secondCombination) {
     for (let i = 0; i < 5; i += 1) {
-        if (firstCombination[i].number > secondCombination[i].number) return 1;
-        else if (firstCombination[i].number < secondCombination[i].number) return 2;
+        const firstHandCard = firstHand.bestCombination[i];
+        const secondHandCard = secondHand.bestCombination[i];
+
+        if (firstHandCard.number > secondHandCard.number) return -1;
+        else if (firstHandCard.number < secondHandCard.number) return 1;
     }
 
-    return 3;
+    return 0;
 }
 
-function determineWinners(rankedHands) {
-    const maxRank = Math.max(...[...rankedHands.values()].map(value => value.rank));
-    const maxRankedHands = [...rankedHands.entries()].filter(entry => entry[1].rank === maxRank);
+function rankHands(river, hands) {
+    const rankHand = setupHandRanker(river);
 
-    const winners = [maxRankedHands[0]];
-    for (let i = 1; i < maxRankedHands.length; i += 1) {
-        const currentWinnerCombination = winners[0][1].bestCombination;
-        const candidateWinnerCombination = maxRankedHands[i][1].bestCombination;
+    let rankedHands = hands.map(rankHand);
+    rankedHands.forEach((hand, index) => {
+        hand.index = index;
+    });
 
-        const verdict = resolveWinner(currentWinnerCombination, candidateWinnerCombination);
-        if (verdict === 2) {
-            winners.splice(0, winners.length, maxRankedHands[i]);
-        } else if (verdict === 3) {
-            winners.push(maxRankedHands[i]);
+    rankedHands = rankedHands.sort(resolveWinner).map(hand => [hand]);
+
+    for (let i = 1; i < rankedHands.length; i += 1) {
+        const currentHand = rankedHands[i][0];
+        const previousHand = rankedHands[i - 1][0];
+
+        if (resolveWinner(currentHand, previousHand) === 0) {
+            rankedHands[i - 1].push(currentHand);
+            rankedHands.splice(i, 1);
+            i -= 1;
         }
     }
 
-    return new Map(winners);
+    return rankedHands;
 }
 
 function createDeck() {
@@ -181,4 +186,4 @@ function generateCards(numberOfCardsToGenerate, alreadyGeneratedCards) {
     return generatedCards;
 }
 
-module.exports = { rankHands, determineWinner: determineWinners, generateCards };
+module.exports = { rankHands, generateCards };
