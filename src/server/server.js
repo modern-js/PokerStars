@@ -306,13 +306,69 @@ io.on('connection', (socket) => {
                     winners: [{
                         seatNumber: winner.seatNumber,
                         chipsWon: currentDraw.totalBets,
-                        winningHand: null,
                     }],
                 });
 
                 setTimeout(() => { startNewDeal(table); }, 5000);
             } else if (currentDraw.state === 3) {
-                // show the cards
+                const river = currentDraw.cards;
+                const playersHands = currentDraw.seats
+                    .filter(seat => seat)
+                    .map(seat => seat.cards);
+
+                const rankedHands = pokerEngine.rankHands(river, playersHands);
+
+                const winners = [];
+                rankedHands.forEach((similarRankedHands) => {
+                    const winningPlayers = similarRankedHands
+                        .map(hand => ({ player: activePlayers[hand.index], hand }))
+                        .filter(p => p.player.playsFor > 0)
+                        .sort((first, second) => first.player.playsFor - second.player.playsFor);
+
+                    let totalChipsWon = 0;
+
+                    winningPlayers.forEach((winningPlayer, index) => {
+                        const divideBetween = winningPlayers.length - index;
+
+                        activePlayers.forEach((activePlayer) => {
+                            const chipsWon = Math.min(winningPlayer.player.playsFor / divideBetween,
+                                activePlayer.playsFor);
+
+                            totalChipsWon += chipsWon;
+                            activePlayer.playsFor -= chipsWon;
+                        });
+
+                        winningPlayer.player.chips += totalChipsWon;
+
+                        winners.push({
+                            seatNumber: winningPlayer.player.seatNumber,
+                            chipsWon: totalChipsWon,
+                            winningHand: winningPlayer.hand.bestCombination
+                                .map(card => card.signature),
+                            winningHandRank: winningPlayer.hand.rank,
+                        });
+                    });
+                });
+
+                currentDraw.isActive = false;
+                currentDraw.seats.forEach((seat) => {
+                    if (seat && seat.chips === 0) {
+                        tables.addPlayer(tableId, seat.seatNumber, null);
+                    }
+                });
+
+                io.emit('newTable', tables.toSimpleViewModel(table));
+
+                io.to(tableId).emit('updatePlayerInTurn', -1);
+
+                io.to(tableId).emit('drawFinished', { winners });
+
+                activePlayers.forEach((activePlayer) => {
+                    io.to(tableId).emit('updatePlayer', {
+                        seatNumber: activePlayer.seatNumber,
+                        player: activePlayer,
+                    });
+                });
             } else {
                 const alreadyGeneratedCards = new Set(currentDraw.cards);
 

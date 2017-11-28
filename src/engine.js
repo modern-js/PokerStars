@@ -130,9 +130,9 @@ function resolveWinner(firstHand, secondHand) {
 }
 
 function rankHands(river, hands) {
-    const rankHand = setupHandRanker(river);
+    const rankHand = setupHandRanker(river.map(card => new Card(card)));
 
-    let rankedHands = hands.map(rankHand);
+    let rankedHands = hands.map(hand => rankHand(hand.map(card => new Card(card))));
     rankedHands.forEach((hand, index) => {
         hand.index = index;
     });
@@ -157,7 +157,7 @@ function createDeck() {
     const deck = [];
     for (let i = 2; i < 15; i += 1) {
         for (let j = 1; j < 5; j += 1) {
-            deck.push(new Card(i, j));
+            deck.push(new Card(`${i}-${j}`));
         }
     }
 
