@@ -8,8 +8,8 @@ export default class Winners extends Component {
             name: PropTypes.string.isRequired,
             seatNumber: PropTypes.number.isRequired,
             chipsWon: PropTypes.number.isRequired,
-            winningHandRank: PropTypes.number.isRequired,
-            winningHand: PropTypes.arrayOf(PropTypes.string).isRequired,
+            winningHandRank: PropTypes.number,
+            winningHand: PropTypes.arrayOf(PropTypes.string),
         })).isRequired,
     };
 
@@ -46,9 +46,11 @@ export default class Winners extends Component {
 
     render() {
         const winners = this.props.winners.map((winner) => {
-            const message = `${winner.name} won ${winner.chipsWon} chips with ${Winners.rankNames[winner.winningHandRank]}`;
+            const message = winner.winningHandRank ?
+                `${winner.name} won ${winner.chipsWon} chips with ${Winners.rankNames[winner.winningHandRank]}` :
+                `${winner.name} won ${winner.chipsWon} chips`;
 
-            const images = winner.winningHand.map(card => (
+            const images = winner.winningHandRank && winner.winningHand.map(card => (
                 <img key={card} src={`../img/cards/${card}.svg`} style={Winners.imageStyles} alt={card} />
             ));
 
