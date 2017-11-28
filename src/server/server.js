@@ -302,12 +302,10 @@ io.on('connection', (socket) => {
 
                 io.to(tableId).emit('updatePlayerInTurn', -1);
 
-                io.to(tableId).emit('drawFinished', {
-                    winners: [{
-                        seatNumber: winner.seatNumber,
-                        chipsWon: currentDraw.totalBets,
-                    }],
-                });
+                io.to(tableId).emit('drawFinished', [{
+                    seatNumber: winner.seatNumber,
+                    chipsWon: currentDraw.totalBets,
+                }]);
 
                 setTimeout(() => { startNewDeal(table); }, 5000);
             } else if (currentDraw.state === 3) {
