@@ -3,6 +3,7 @@ import { Prompt } from 'react-router-dom';
 import PropTypes from 'prop-types';
 import Controllers from './Controllers';
 import Seat from './Seat';
+import Winners from './Winners';
 import * as socket from '../services/socket';
 
 export default class Table extends Component {
@@ -78,6 +79,8 @@ export default class Table extends Component {
         this.state = {
             table: null,
             seatNumber: null,
+            winners: null,
+            winnersTimeout: null,
         };
     }
 
@@ -97,6 +100,7 @@ export default class Table extends Component {
         socket.unsubscribeForEvent('updateTableState', this.updateTableState);
         socket.unsubscribeForEvent('updatePlayerInTurn', this.updatePlayerInTurn);
         socket.unsubscribeForEvent('drawFinished', this.finishDraw);
+        clearTimeout(this.state.winnersTimeout);
 
         if (this.state.seatNumber !== null) {
             window.removeEventListener('beforeunload', this.warnOnExit);
@@ -144,7 +148,15 @@ export default class Table extends Component {
     };
 
     finishDraw = (winners) => {
-        console.log(winners);
+        const winnersTimeout = setTimeout(() => {
+            this.setState({ winners: null });
+        }, 5000);
+
+        winners.forEach((winner) => {
+            winner.name = this.state.table.currentDraw.seats[winner.seatNumber].playerName;
+        });
+
+        this.setState({ winners, winnersTimeout });
     };
 
     joinNewPlayer = (seatNumber) => {
@@ -172,7 +184,6 @@ export default class Table extends Component {
     leaveRoom = () => {
         socket.emitEvent('leaveRoom');
     };
-
 
     handleControllerPressed = (action, betAmount) => {
         socket.emitEvent('actionTaken', {
@@ -241,6 +252,9 @@ export default class Table extends Component {
                     previousBet={currentPlayer.bet}
                     handleAction={this.handleControllerPressed}
                 />}
+
+                {this.state.winners &&
+                <Winners winners={this.state.winners} />}
             </div>
         );
     }

@@ -361,7 +361,7 @@ io.on('connection', (socket) => {
 
                 io.to(tableId).emit('updatePlayerInTurn', -1);
 
-                io.to(tableId).emit('drawFinished', { winners });
+                io.to(tableId).emit('drawFinished', winners);
 
                 activePlayers.forEach((activePlayer) => {
                     io.to(tableId).emit('updatePlayer', {
@@ -369,6 +369,8 @@ io.on('connection', (socket) => {
                         player: activePlayer,
                     });
                 });
+
+                setTimeout(() => { startNewDeal(table); }, 5000);
             } else {
                 const alreadyGeneratedCards = new Set(currentDraw.cards);
 
