@@ -1,7 +1,14 @@
 class Card {
-    constructor(number, suit) {
-        this.number = number;
-        this.suit = suit;
+    constructor(value) {
+        if (typeof value === 'string') {
+            const cardParts = value.split('-');
+
+            this.number = Number.parseInt(cardParts[0], 10);
+            this.suit = Number.parseInt(cardParts[1], 10);
+        } else if (value instanceof Card) {
+            this.number = value.number;
+            this.suit = value.suit;
+        }
     }
 
     get signature() {
