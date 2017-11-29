@@ -75,16 +75,22 @@ export default class Table extends Component {
     constructor(props) {
         super(props);
 
+        const AudioContext = window.AudioContext || window.webkitAudioContext || false;
+        const audioContext = AudioContext ? new AudioContext() : null;
+        const oscillator = audioContext ? audioContext.createOscillator() : null;
+
         this.state = {
             table: null,
             seatNumber: null,
             winners: null,
             winnersTimeout: null,
+            audioContext,
+            oscillator,
         };
     }
 
     componentDidMount() {
-        socket.subscribeForEvent('getRoom', this.getTable);
+        socket.subscribeForEvent('getRoom', this.getRoom);
         socket.subscribeForEvent('updatePlayer', this.updatePlayer);
         socket.subscribeForEvent('updateTableState', this.updateTableState);
         socket.subscribeForEvent('updatePlayerInTurn', this.updatePlayerInTurn);
@@ -97,7 +103,7 @@ export default class Table extends Component {
     }
 
     componentWillUnmount() {
-        socket.unsubscribeForEvent('getRoom', this.getTable);
+        socket.unsubscribeForEvent('getRoom', this.getRoom);
         socket.unsubscribeForEvent('updatePlayer', this.updatePlayer);
         socket.unsubscribeForEvent('updateTableState', this.updateTableState);
         socket.unsubscribeForEvent('updatePlayerInTurn', this.updatePlayerInTurn);
@@ -111,7 +117,7 @@ export default class Table extends Component {
         }
     }
 
-    getTable = (response) => {
+    getRoom = (response) => {
         if (response.statusCode === 200) {
             this.setState({ table: response.table });
         } else if (response.statusCode === 401) {
@@ -182,10 +188,21 @@ export default class Table extends Component {
             };
 
             this.setState({ seatNumber });
+            this.state.oscillator.start();
 
             socket.emitEvent('newPlayer', player);
             window.addEventListener('beforeunload', this.warnOnExit);
             window.addEventListener('unload', this.leaveRoom);
+        }
+    };
+
+    beep = () => {
+        if (this.state.oscillator) {
+            this.state.oscillator.connect(this.state.audioContext.destination);
+
+            setTimeout(() => {
+                this.state.oscillator.disconnect(this.state.audioContext.destination);
+            }, 300);
         }
     };
 
@@ -213,8 +230,13 @@ export default class Table extends Component {
         }
 
         const currentPlayer = table.currentDraw.seats[this.state.seatNumber];
-        const seats = [];
+        const isCurrentPlayerInTurn = table.currentDraw.playerInTurn === this.state.seatNumber;
 
+        if (isCurrentPlayerInTurn) {
+            this.beep();
+        }
+
+        const seats = [];
         for (let i = 0; i < 8; i += 1) {
             if (table.currentDraw.seats[i] || this.state.seatNumber === null) {
                 const seatProps = {
@@ -258,7 +280,7 @@ export default class Table extends Component {
                     {cards}
                 </div>}
 
-                {table.currentDraw.playerInTurn === this.state.seatNumber &&
+                {isCurrentPlayerInTurn &&
                 <Controllers
                     chips={currentPlayer.chips}
                     amountToCall={currentPlayer.toCall}
