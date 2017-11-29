@@ -1,10 +1,9 @@
 const express = require('express');
 const socketIo = require('socket.io');
-const controllers = require('./controllers');
 const logger = require('morgan');
 
-const tables = require('./tables');
-const pokerEngine = require('../engine');
+const tables = require('./services/tables');
+const pokerEngine = require('./poker/engine');
 
 const app = express();
 const server = app.listen(6701, () => {
@@ -20,10 +19,7 @@ app.use((req, res, next) => {
 });
 
 app.use(logger('tiny'));
-app.use(express.json());
 app.use(express.static('dist'));
-app.use('/api', controllers);
-app.set('io', io);
 
 io.on('connection', (socket) => {
     const getTableId = () => Object.keys(socket.rooms).filter(room => room !== socket.id)[0];
