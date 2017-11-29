@@ -1,16 +1,25 @@
 const path = require('path');
 const webpack = require('webpack');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 
 const htmlWebpackPluginConfig = new HtmlWebpackPlugin({
-    template: './src/client/index.html',
+    template: './index.html',
     filename: 'index.html',
     inject: 'body',
 });
 
+const copyWebpackPluginConfig = new CopyWebpackPlugin([
+    {
+        from: 'img',
+        to: 'img',
+    },
+]);
+
 
 module.exports = {
-    entry: './src/client/index.jsx',
+    context: path.join(__dirname, 'src', 'client'),
+    entry: './index.jsx',
     output: {
         path: path.resolve('dist'),
         filename: 'index_bundle.js',
@@ -23,6 +32,7 @@ module.exports = {
     plugins: [
         new webpack.optimize.UglifyJsPlugin(),
         htmlWebpackPluginConfig,
+        copyWebpackPluginConfig,
     ],
     resolve: {
         extensions: ['.js', '.jsx'],
