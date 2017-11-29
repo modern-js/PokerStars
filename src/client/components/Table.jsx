@@ -95,6 +95,7 @@ export default class Table extends Component {
         socket.subscribeForEvent('updateTableState', this.updateTableState);
         socket.subscribeForEvent('updatePlayerInTurn', this.updatePlayerInTurn);
         socket.subscribeForEvent('drawFinished', this.finishDraw);
+        socket.subscribeForEvent('joinSuccessful', this.joinSuccessful);
 
         socket.emitEvent('getRoom', {
             id: this.props.match.params.id,
@@ -108,6 +109,7 @@ export default class Table extends Component {
         socket.unsubscribeForEvent('updateTableState', this.updateTableState);
         socket.unsubscribeForEvent('updatePlayerInTurn', this.updatePlayerInTurn);
         socket.unsubscribeForEvent('drawFinished', this.finishDraw);
+        socket.unsubscribeForEvent('joinSuccessful', this.joinSuccessful);
         clearTimeout(this.state.winnersTimeout);
 
         if (this.state.seatNumber !== null) {
@@ -187,13 +189,16 @@ export default class Table extends Component {
                 seatNumber,
             };
 
-            this.setState({ seatNumber });
-            this.state.oscillator.start();
-
             socket.emitEvent('newPlayer', player);
-            window.addEventListener('beforeunload', this.warnOnExit);
-            window.addEventListener('unload', this.leaveRoom);
         }
+    };
+
+    joinSuccessful = (seatNumber) => {
+        this.setState({ seatNumber });
+        this.state.oscillator.start();
+
+        window.addEventListener('beforeunload', this.warnOnExit);
+        window.addEventListener('unload', this.leaveRoom);
     };
 
     beep = () => {

@@ -109,6 +109,11 @@ io.on('connection', (socket) => {
     });
 
     socket.on('newTable', (table) => {
+        if (table.name.length < 5 || table.name.length > 20) {
+            socket.emit('validationError', { message: 'Table name must be between 5 and 20 chars!' });
+            return;
+        }
+
         const newTable = tables.add(table);
 
         io.emit('newTable', {
@@ -156,7 +161,14 @@ io.on('connection', (socket) => {
             return;
         }
 
+        if (player.playerName.length < 4 || player.playerName.length > 10) {
+            socket.emit('validationError', { message: 'Player name must be between 4 and 10 chars!' });
+            return;
+        }
+
         const newPlayer = tables.addPlayer(tableId, player.seatNumber, player, socket.id);
+
+        socket.emit('joinSuccessful', player.seatNumber);
 
         io.to(tableId).emit('updatePlayer', {
             seatNumber: newPlayer.seatNumber,
