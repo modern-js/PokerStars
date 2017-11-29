@@ -139,7 +139,7 @@ io.on('connection', (socket) => {
         if (!table ||
             table.currentDraw.seats[player.seatNumber] ||
             tables.getPlayerSeatIndex(tableId, socket.id) !== -1) {
-            socket.emit('error', { message: 'You cannot join this seat!' });
+            socket.emit('validationError', { message: 'You cannot join this seat!' });
             return;
         }
 
@@ -160,14 +160,14 @@ io.on('connection', (socket) => {
         const table = tables.getById(tableId);
 
         if (!table) {
-            socket.emit('error', { message: 'There is no such table!' });
+            socket.emit('validationError', { message: 'There is no such table!' });
             return;
         }
 
         const seatNumber = tables.getPlayerSeatIndex(tableId, socket.id);
 
         if (seatNumber === -1) {
-            socket.emit('error', { message: 'You are not playing on this table!' });
+            socket.emit('validationError', { message: 'You are not playing on this table!' });
             return;
         }
 
@@ -188,12 +188,12 @@ io.on('connection', (socket) => {
         const { currentDraw } = table;
 
         if (seatNumber === -1) {
-            socket.emit('error', { message: 'You are not playing on this table!' });
+            socket.emit('validationError', { message: 'You are not playing on this table!' });
             return;
         }
 
         if (currentDraw.playerInTurn !== seatNumber) {
-            socket.emit('error', { message: 'You are not in turn!' });
+            socket.emit('validationError', { message: 'You are not in turn!' });
             return;
         }
 
@@ -202,7 +202,7 @@ io.on('connection', (socket) => {
         switch (data.action) {
             case 1: {
                 if (player.toCall) {
-                    socket.emit('error', { message: 'You cannot check!' });
+                    socket.emit('validationError', { message: 'You cannot check!' });
                     return;
                 }
 
@@ -211,7 +211,7 @@ io.on('connection', (socket) => {
             }
             case 2: {
                 if (!player.toCall) {
-                    socket.emit('error', { message: 'You cannot call!' });
+                    socket.emit('validationError', { message: 'You cannot call!' });
                     return;
                 }
 
@@ -228,7 +228,7 @@ io.on('connection', (socket) => {
             }
             case 3: {
                 if (player.chips < data.betAmount || player.toCall >= data.betAmount) {
-                    socket.emit('error', { message: 'You cannot raise!' });
+                    socket.emit('validationError', { message: 'You cannot raise!' });
                     return;
                 }
 
@@ -262,7 +262,7 @@ io.on('connection', (socket) => {
                 break;
             }
             default: {
-                socket.emit('error', { message: 'Invalid action!' });
+                socket.emit('validationError', { message: 'Invalid action!' });
                 return;
             }
         }
