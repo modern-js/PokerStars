@@ -114,10 +114,17 @@ io.on('connection', (socket) => {
         io.emit('newTable', tables.toSimpleViewModel(newTable));
     });
 
-    socket.on('getRoom', (tableId) => {
-        let table = tables.getById(tableId);
+    socket.on('getRoom', (req) => {
+        let table = tables.getById(req.id);
+        let statusCode;
 
-        if (table) {
+        if (!table) {
+            statusCode = 404;
+        } else if (table.password !== req.password) {
+            statusCode = 401;
+            table = null;
+        } else {
+            statusCode = 200;
             table = { ...table };
             table.currentDraw.seats.forEach((seat) => {
                 if (seat) {
@@ -126,10 +133,13 @@ io.on('connection', (socket) => {
                 }
             });
 
-            socket.join(tableId);
+            socket.join(req.id);
         }
 
-        socket.emit('getRoom', table);
+        socket.emit('getRoom', {
+            table,
+            statusCode,
+        });
     });
 
     socket.on('newPlayer', (player) => {
