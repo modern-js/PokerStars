@@ -8,6 +8,10 @@ function setupHandRanker(river) {
     const processCards = (cards, expectedCards) => {
         cards.forEach((card) => {
             numbersCards[card.number].push(card);
+            if (card.number === 14) {
+                numbersCards[1].push(card);
+            }
+
             suitsCards[card.suit].push(card);
             cardsSet.add(card.signature);
         });
