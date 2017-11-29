@@ -110,6 +110,10 @@ function setupHandRanker(river) {
 
         hand.forEach((card) => {
             numbersCards[card.number].splice(-1, 1);
+            if (card.number === 14) {
+                numbersCards[1].splice(-1, 1);
+            }
+
             suitsCards[card.suit].splice(-1, 1);
             cardsSet.delete(card.signature);
         });
