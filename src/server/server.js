@@ -240,7 +240,9 @@ io.on('connection', (socket) => {
                 currentDraw.totalBets += data.betAmount;
                 currentDraw.timesChecked = 1;
                 currentDraw.seats.forEach((seat) => {
-                    if (seat) seat.toCall = player.bet - seat.bet;
+                    if (seat) {
+                        seat.toCall = player.bet - seat.bet;
+                    }
                 });
 
                 break;
@@ -327,10 +329,10 @@ io.on('connection', (socket) => {
 
                     winningPlayers.forEach((winningPlayer, index) => {
                         const divideBetween = winningPlayers.length - index;
+                        const winnerPlaysFor = winningPlayer.player.playsFor / divideBetween;
 
                         activePlayers.forEach((activePlayer) => {
-                            const chipsWon = Math.min(winningPlayer.player.playsFor / divideBetween,
-                                activePlayer.playsFor);
+                            const chipsWon = Math.min(winnerPlaysFor, activePlayer.playsFor);
 
                             totalChipsWon += chipsWon;
                             activePlayer.playsFor -= chipsWon;
