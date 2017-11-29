@@ -14,7 +14,6 @@ export default class Table extends Component {
             }).isRequired,
         }).isRequired,
         history: PropTypes.shape({
-            push: PropTypes.func.isRequired,
             replace: PropTypes.func.isRequired,
         }).isRequired,
     };
@@ -91,7 +90,10 @@ export default class Table extends Component {
         socket.subscribeForEvent('updatePlayerInTurn', this.updatePlayerInTurn);
         socket.subscribeForEvent('drawFinished', this.finishDraw);
 
-        socket.emitEvent('getRoom', this.props.match.params.id);
+        socket.emitEvent('getRoom', {
+            id: this.props.match.params.id,
+            password: '',
+        });
     }
 
     componentWillUnmount() {
@@ -109,11 +111,22 @@ export default class Table extends Component {
         }
     }
 
-    getTable = (table) => {
-        if (table) {
-            this.setState({ table });
+    getTable = (response) => {
+        if (response.statusCode === 200) {
+            this.setState({ table: response.table });
+        } else if (response.statusCode === 401) {
+            const tablePassword = window.prompt('Enter table password');
+
+            if (tablePassword) {
+                socket.emitEvent('getRoom', {
+                    id: this.props.match.params.id,
+                    password: tablePassword,
+                });
+            } else {
+                this.props.history.replace('/');
+            }
         } else {
-            this.props.history.replace('/404');
+            this.props.history.replace('/');
         }
     };
 

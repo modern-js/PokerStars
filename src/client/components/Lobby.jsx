@@ -20,14 +20,14 @@ export default class Lobby extends Component {
 
     componentDidMount() {
         socket.subscribeForEvent('getTables', this.getAllTables);
-        socket.subscribeForEvent('newTable', this.addNewTableToState);
+        socket.subscribeForEvent('newTable', this.updateTable);
 
         socket.emitEvent('getTables');
     }
 
     componentWillUnmount() {
         socket.unsubscribeForEvent('getTables', this.getAllTables);
-        socket.unsubscribeForEvent('newTable', this.addNewTableToState);
+        socket.unsubscribeForEvent('newTable', this.updateTable);
     }
 
     getAllTables = (tables) => {
@@ -37,7 +37,7 @@ export default class Lobby extends Component {
         this.setState({ tables: tablesMap });
     };
 
-    addNewTableToState = (table) => {
+    updateTable = (table) => {
         const tables = this.state.tables;
         tables.set(table.id, table);
 
