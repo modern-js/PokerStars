@@ -27,7 +27,7 @@ export default class App extends Component {
     handleError = (data) => {
         const errorTimeout = setTimeout(() => {
             this.setState({ errorMessage: null });
-        }, 5000);
+        }, 3000);
 
         this.setState({
             errorMessage: data.message,

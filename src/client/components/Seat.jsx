@@ -28,7 +28,7 @@ export default class Seat extends Component {
         position: 'absolute',
         padding: '1%',
         borderRadius: '50%',
-        fontSize: '2vw',
+        fontSize: '1.4vw',
         lineHeight: '8vh',
     };
 
