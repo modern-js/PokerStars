@@ -111,7 +111,10 @@ io.on('connection', (socket) => {
     socket.on('newTable', (table) => {
         const newTable = tables.add(table);
 
-        io.emit('newTable', tables.toSimpleViewModel(newTable));
+        io.emit('newTable', {
+            tableId: newTable.id,
+            table: tables.toSimpleViewModel(newTable),
+        });
     });
 
     socket.on('getRoom', (req) => {
@@ -160,7 +163,10 @@ io.on('connection', (socket) => {
             player: newPlayer,
         });
 
-        io.emit('newTable', tables.toSimpleViewModel(table));
+        io.emit('newTable', {
+            tableId: table.id,
+            table: tables.toSimpleViewModel(table),
+        });
 
         startNewDeal();
     });
@@ -183,12 +189,16 @@ io.on('connection', (socket) => {
 
         tables.addPlayer(tableId, seatNumber, null);
         socket.leave(tableId);
-        io.to(tableId).emit('updatePlayer', {
-            seatNumber,
-            player: null,
-        });
 
-        io.emit('newTable', tables.toSimpleViewModel(table));
+        const playersInRoom = table.currentDraw.seats.filter(seat => seat);
+        if (playersInRoom.length === 0) {
+            tables.remove(tableId);
+            io.emit('newTable', { tableId, table: null });
+            io.to(tableId).emit('getRoom', { table: null, statusCode: 404 });
+        } else {
+            io.to(tableId).emit('updatePlayer', { seatNumber, player: null });
+            io.emit('newTable', { tableId, table: tables.toSimpleViewModel(table) });
+        }
     });
 
     socket.on('actionTaken', (data) => {
@@ -310,7 +320,10 @@ io.on('connection', (socket) => {
                     }
                 });
 
-                io.emit('newTable', tables.toSimpleViewModel(table));
+                io.emit('newTable', {
+                    tableId: table.id,
+                    table: tables.toSimpleViewModel(table),
+                });
 
                 io.to(tableId).emit('updatePlayerInTurn', -1);
 
@@ -367,7 +380,10 @@ io.on('connection', (socket) => {
                     }
                 });
 
-                io.emit('newTable', tables.toSimpleViewModel(table));
+                io.emit('newTable', {
+                    tableId: table.id,
+                    table: tables.toSimpleViewModel(table),
+                });
 
                 io.to(tableId).emit('updatePlayerInTurn', -1);
 

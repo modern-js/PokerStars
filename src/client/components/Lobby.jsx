@@ -37,9 +37,9 @@ export default class Lobby extends Component {
         this.setState({ tables: tablesMap });
     };
 
-    updateTable = (table) => {
+    updateTable = (response) => {
         const tables = this.state.tables;
-        tables.set(table.id, table);
+        tables.set(response.tableId, response.table);
 
         this.setState({ tables });
     };
@@ -53,18 +53,20 @@ export default class Lobby extends Component {
     };
 
     render() {
-        const tables = Array.from(this.state.tables).map(([id, table]) => (
-            <div key={id} style={{ border: '1px solid black', width: '20%', margin: '2% 1%', padding: '1%', display: 'inline-block', position: 'relative' }}>
-                {table.isLocked && <span style={{ position: 'absolute', top: '5%', right: '5%' }}>Locked</span>}
-                <div>{table.name}</div>
-                <ul>
-                    {table.players.map(player => (
-                        <li key={player.playerId}>{player.playerName}</li>
-                    ))}
-                </ul>
-                <button onClick={() => { this.joinTable(table.id); }}>Join</button>
-            </div>
-        ));
+        const tables = Array.from(this.state.tables)
+            .filter(([id, table]) => id && table)
+            .map(([id, table]) => (
+                <div key={id} style={{ border: '1px solid black', width: '20%', margin: '2% 1%', padding: '1%', display: 'inline-block', position: 'relative' }}>
+                    {table.isLocked && <span style={{ position: 'absolute', top: '5%', right: '5%' }}>Locked</span>}
+                    <div>{table.name}</div>
+                    <ul>
+                        {table.players.map(player => (
+                            <li key={player.playerId}>{player.playerName}</li>
+                        ))}
+                    </ul>
+                    <button onClick={() => { this.joinTable(table.id); }}>Join</button>
+                </div>
+            ));
 
         return (
             <div>
