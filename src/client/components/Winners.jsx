@@ -1,5 +1,6 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import PopUp from './PopUp';
 
 
 export default class Winners extends Component {
@@ -11,18 +12,6 @@ export default class Winners extends Component {
             winningHandRank: PropTypes.number,
             winningHand: PropTypes.arrayOf(PropTypes.string),
         })).isRequired,
-    };
-
-    static popUpStyles = {
-        position: 'absolute',
-        top: '5%',
-        left: '2%',
-        border: '1px solid black',
-        backgroundColor: 'lightgreen',
-        borderRadius: '15px',
-        padding: '1%',
-        boxShadow: '5px 6px 10px black',
-        width: '25%',
     };
 
     static imageStyles = {
@@ -63,9 +52,9 @@ export default class Winners extends Component {
         });
 
         return (
-            <div style={Winners.popUpStyles}>
+            <PopUp>
                 {winners}
-            </div>
+            </PopUp>
         );
     }
 }
