@@ -86,7 +86,7 @@ io.on('connection', (socket) => {
             seats[bigBlindIndex].playsFor = 20;
             seats[bigBlindIndex].toCall = 0;
 
-            io.to(tableId).emit('getRoom', table);
+            io.to(tableId).emit('getRoom', { table, statusCode: 200 });
             io.to(tableId).emit('updatePlayerInTurn', currentDraw.playerInTurn);
 
             const alreadyGeneratedCards = new Set();
