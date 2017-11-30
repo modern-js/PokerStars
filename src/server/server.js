@@ -304,78 +304,68 @@ io.on('connection', (socket) => {
             player,
         });
 
+        currentDraw.playerInTurn =
+            findNextPlayer(currentDraw.seats, currentDraw.playerInTurn, false);
+
         const activePlayersWithChips = currentDraw.seats
             .filter(seat => seat && seat.isPlaying && seat.chips > 0);
 
-        if (currentDraw.timesChecked !== activePlayersWithChips.length) {
-            currentDraw.playerInTurn = findNextPlayer(currentDraw.seats, currentDraw.playerInTurn, false);
-        } else {
-            // check if all players except 1 are all in
+        if (currentDraw.timesChecked === activePlayersWithChips.length) {
             const activePlayers = currentDraw.seats.filter(seat => seat && seat.isPlaying);
 
-            if (activePlayers.length === 1) {
-                const winner = activePlayers[0];
-                winner.chips += winner.playsFor;
-
-                currentDraw.isActive = false;
-                currentDraw.seats.forEach((seat) => {
-                    if (seat && seat.chips === 0) {
-                        tables.addPlayer(tableId, seat.seatNumber, null);
-                    }
-                });
-
-                io.emit('newTable', {
-                    tableId: table.id,
-                    table: tables.toSimpleViewModel(table),
-                });
-
-                io.to(tableId).emit('updatePlayerInTurn', -1);
-
-                io.to(tableId).emit('drawFinished', [{
-                    seatNumber: winner.seatNumber,
-                    chipsWon: currentDraw.totalBets,
-                }]);
-
-                setTimeout(() => { startNewDeal(table); }, 5000);
-            } else if (currentDraw.state === 3) {
-                const river = currentDraw.cards;
-                const playersHands = currentDraw.seats
-                    .filter(seat => seat)
-                    .map(seat => seat.cards);
-
-                const rankedHands = pokerEngine.rankHands(river, playersHands);
-
+            if (activePlayers.length === 1 || currentDraw.state === 3) {
                 const winners = [];
-                rankedHands.forEach((similarRankedHands) => {
-                    const winningPlayers = similarRankedHands
-                        .map(hand => ({ player: activePlayers[hand.index], hand }))
-                        .filter(p => p.player.playsFor > 0)
-                        .sort((first, second) => first.player.playsFor - second.player.playsFor);
 
-                    let totalChipsWon = 0;
+                if (currentDraw.state === 3) {
+                    const river = currentDraw.cards;
+                    const playersHands = currentDraw.seats
+                        .filter(seat => seat)
+                        .map(seat => seat.cards);
 
-                    winningPlayers.forEach((winningPlayer, index) => {
-                        const divideBetween = winningPlayers.length - index;
-                        const winnerPlaysFor = winningPlayer.player.playsFor / divideBetween;
+                    const rankedHands = pokerEngine.rankHands(river, playersHands);
 
-                        activePlayers.forEach((activePlayer) => {
-                            const chipsWon = Math.min(winnerPlaysFor, activePlayer.playsFor);
+                    rankedHands.forEach((similarRankedHands) => {
+                        const winningPlayers = similarRankedHands
+                            .map(hand => ({ player: activePlayers[hand.index], hand }))
+                            .filter(p => p.player.playsFor > 0)
+                            .sort((first, second) =>
+                                first.player.playsFor - second.player.playsFor);
 
-                            totalChipsWon += chipsWon;
-                            activePlayer.playsFor -= chipsWon;
-                        });
+                        let totalChipsWon = 0;
 
-                        winningPlayer.player.chips += totalChipsWon;
+                        winningPlayers.forEach((winningPlayer, index) => {
+                            const divideBetween = winningPlayers.length - index;
+                            const winnerPlaysFor = winningPlayer.player.playsFor / divideBetween;
 
-                        winners.push({
-                            seatNumber: winningPlayer.player.seatNumber,
-                            chipsWon: totalChipsWon,
-                            winningHand: winningPlayer.hand.bestCombination
-                                .map(card => card.signature),
-                            winningHandRank: winningPlayer.hand.rank,
+                            activePlayers.forEach((activePlayer) => {
+                                const chipsWon = Math.min(winnerPlaysFor, activePlayer.playsFor);
+
+                                totalChipsWon += chipsWon;
+                                activePlayer.playsFor -= chipsWon;
+                            });
+
+                            winningPlayer.player.chips += totalChipsWon;
+
+                            winners.push({
+                                seatNumber: winningPlayer.player.seatNumber,
+                                chipsWon: totalChipsWon,
+                                winningHand: winningPlayer.hand.bestCombination
+                                    .map(card => card.signature),
+                                winningHandRank: winningPlayer.hand.rank,
+                            });
                         });
                     });
-                });
+                } else {
+                    const winner = activePlayers[0];
+                    winner.chips += winner.playsFor;
+                    winner.playsFor = 0;
+
+                    winners.push({
+                        seatNumber: winner.seatNumber,
+                        chipsWon: currentDraw.totalBets,
+                    });
+                }
+
 
                 currentDraw.isActive = false;
                 currentDraw.seats.forEach((seat) => {
@@ -390,7 +380,6 @@ io.on('connection', (socket) => {
                 });
 
                 io.to(tableId).emit('updatePlayerInTurn', -1);
-
                 io.to(tableId).emit('drawFinished', winners);
 
                 activePlayers.forEach((activePlayer) => {
@@ -410,6 +399,10 @@ io.on('connection', (socket) => {
                         alreadyGeneratedCards.add(seat.cards[1]);
                         seat.bet = 0;
                     }
+                });
+
+                currentDraw.cards.forEach((card) => {
+                    alreadyGeneratedCards.add(card);
                 });
 
                 currentDraw.state += 1;
