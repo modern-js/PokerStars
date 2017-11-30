@@ -24,23 +24,19 @@ app.use(express.static('dist'));
 io.on('connection', (socket) => {
     const getTableId = () => Object.keys(socket.rooms).filter(room => room !== socket.id)[0];
 
-    // TODO: use another method -> filter by the if statement and the get the seatNumber from the properties
-    const findNextPlayer = (seats, playerInTurn) => {
-        const seatsCount = seats.length;
-        for (let i = (playerInTurn + 1) % seatsCount; i < seatsCount; i += 1, i %= seatsCount) {
-            if (seats[i] && seats[i].isPlaying && seats[i].chips > 0) return i;
+    const findNextPlayer = (seats, playerInTurn, reverse) => {
+        const possiblePlayers = seats.filter(seat => seat && seat.isPlaying && seat.chips > 0);
+        let nextPlayerIndex;
+
+        if (reverse) {
+            nextPlayerIndex = possiblePlayers.reverse().findIndex(s => s.seatNumber < playerInTurn);
+        } else {
+            nextPlayerIndex = possiblePlayers.findIndex(s => s.seatNumber > playerInTurn);
         }
 
-        return null;
-    };
-
-    const findPreviousPlayer = (seats, playerInTurn) => {
-        for (let i = playerInTurn - 1 < 0 ? seats.length - 1 : playerInTurn - 1; i >= 0; i -= 1) {
-            if (seats[i] && seats[i].isPlaying && seats[i].chips > 0) return i;
-            if (i <= 0) i = seats.length;
-        }
-
-        return null;
+        return nextPlayerIndex !== -1 ?
+            possiblePlayers[nextPlayerIndex].seatNumber :
+            possiblePlayers[0].seatNumber;
     };
 
     const startNewDeal = () => {
@@ -60,9 +56,9 @@ io.on('connection', (socket) => {
                 }
             });
 
-            const playerInTurn = findNextPlayer(seats, currentDraw.playerInTurn);
-            const bigBlindIndex = findPreviousPlayer(seats, playerInTurn);
-            const smallBlindIndex = findPreviousPlayer(seats, bigBlindIndex);
+            const playerInTurn = findNextPlayer(seats, currentDraw.playerInTurn, false);
+            const bigBlindIndex = findNextPlayer(seats, playerInTurn, true);
+            const smallBlindIndex = findNextPlayer(seats, bigBlindIndex, true);
 
             currentDraw.playerInTurn = playerInTurn;
             currentDraw.smallBlind = smallBlindIndex;
@@ -312,7 +308,7 @@ io.on('connection', (socket) => {
             .filter(seat => seat && seat.isPlaying && seat.chips > 0);
 
         if (currentDraw.timesChecked !== activePlayersWithChips.length) {
-            currentDraw.playerInTurn = findNextPlayer(currentDraw.seats, currentDraw.playerInTurn);
+            currentDraw.playerInTurn = findNextPlayer(currentDraw.seats, currentDraw.playerInTurn, false);
         } else {
             // check if all players except 1 are all in
             const activePlayers = currentDraw.seats.filter(seat => seat && seat.isPlaying);
@@ -418,7 +414,7 @@ io.on('connection', (socket) => {
 
                 currentDraw.state += 1;
                 currentDraw.playerInTurn =
-                    findNextPlayer(currentDraw.seats, currentDraw.smallBlind - 1);
+                    findNextPlayer(currentDraw.seats, currentDraw.smallBlind - 1, false);
                 currentDraw.timesChecked = 0;
 
                 const numberOfCardsToGenerate = currentDraw.state === 1 ? 3 : 1;
